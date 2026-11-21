@@ -125,8 +125,8 @@
     $('#netUpgradeText').textContent=`耐久 +2　✦ ${45+netLevel*35}`;
     $('#weaponUpgradeText').textContent=`こうげき +20%　✦ ${60+weaponLevel*45}`;
     $('#fishCards').querySelectorAll('.fish-card').forEach(c=>{const d=kindData[c.dataset.kind];c.classList.toggle('selected',c.dataset.kind===selectedKind);c.setAttribute('aria-pressed',String(c.dataset.kind===selectedKind));c.classList.toggle('unaffordable',pearls<d.cost)});
-    $('#waveBtn').disabled=!started||waveLive||wave>=5||(wave>0&&!waveDone);
-    $('#waveBtn').innerHTML=wave===0?'ぼうえい開始 <span>▶</span>':`つぎの波へ <span>▶</span>`;
+    $('#waveBtn').disabled=waveLive||wave>=5||(started&&wave>0&&!waveDone);
+    $('#waveBtn').innerHTML=!started?'じゅんび開始 <span>▶</span>':wave===0?'ぼうえい開始 <span>▶</span>':`つぎの波へ <span>▶</span>`;
     const phase=$('#phaseText'),pill=phase.parentElement;
     pill.classList.toggle('live',waveLive);pill.classList.toggle('alert',hp<=2);
     phase.textContent=waveLive?'ぼうえい中':waveDone?(wave>=5?'クリア！':'じゅんびOK'):started?'じゅんび中':'たいき中';
@@ -139,9 +139,13 @@
     let d=Math.max(0,Math.min(1,progress))*total;for(const s of segments){if(d<=s.start+s.len){const u=(d-s.start)/s.len;return{x:s.a.x+(s.b.x-s.a.x)*u,y:s.a.y+(s.b.y-s.a.y)*u}}}return route.at(-1)
   }
   function beginWave(){
-    if(!started){started=true;$('#startScreen').classList.add('hidden')}
+    if(!started){enterPreparation();return}
     if(waveLive||wave>=5)return;
     wave++;waveLive=true;waveDone=false;spawnLeft=6+wave*2;spawnTimer=.15;$('#missionText').textContent=`ウェーブ ${wave}：あと ${spawnLeft}このごみに注意！`;updateHUD();toast(`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
+  }
+  function enterPreparation(){
+    if(started)return;
+    started=true;$('#startScreen').classList.add('hidden');updateHUD();toast('魚を配置して、ぼうえい開始！')
   }
   function newEnemy(){
     const kind=trashTypes[Math.random()<Math.min(.25,.07+wave*.035)?Math.floor(Math.random()*trashTypes.length):Math.floor(Math.random()*3)];
@@ -195,7 +199,7 @@
 
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();const p=canvasPoint(e);placeOrSelect(p.x,p.y)});
   $('#fishCards').addEventListener('click',e=>{const card=e.target.closest('.fish-card');if(!card)return;selectedKind=card.dataset.kind;updateHUD();if(!started)toast(`${kindData[selectedKind].name} を配置できるよ`)});
-  $('#startBtn').addEventListener('click',()=>{started=true;$('#startScreen').classList.add('hidden');updateHUD();toast('魚を配置して、ぼうえい開始！')});
+  $('#startBtn').addEventListener('click',enterPreparation);
   $('#waveBtn').addEventListener('click',beginWave);$('#cleanBtn').addEventListener('click',attackSpecial);
   $('#netUpgrade').addEventListener('click',upgradeNet);$('#weaponUpgrade').addEventListener('click',upgradeWeapon);
   $('#towerUpgradeBtn').addEventListener('click',upgradeTower);
