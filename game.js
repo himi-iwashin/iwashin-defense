@@ -18,11 +18,24 @@
     mackerel:{name:'アジ支援隊',cost:55,range:192,damage:2,rate:1.0,color:'#64e3bd',speed:'広範囲',upgrade:55},
     yellowtail:{name:'ブリ大将',cost:85,range:172,damage:4,rate:1.52,color:'#ffad69',speed:'高火力',upgrade:75}
   };
-  const slots = [
-    {x:240,y:143},{x:410,y:143},{x:580,y:143},{x:750,y:143},
-    {x:240,y:414},{x:410,y:414},{x:580,y:414},{x:750,y:414}
+  const stageMaps = [
+    {name:'定置網の海',shape:[[125,114],[795,114],[795,430],[125,430]],slots:[[240,143],[410,143],[580,143],[750,143],[240,414],[410,414],[580,414],[750,414]],route:[[-18,240],[104,240],[188,204],[291,218],[384,278],[504,302],[620,280],[716,324],[819,300],[978,250]]},
+    {name:'三角瀬の入り江',shape:[[125,270],[235,120],[690,120],[820,270],[690,425],[235,425]],slots:[[260,155],[430,145],[600,155],[735,220],[260,390],[430,405],[600,390],[735,320]],route:[[-18,180],[105,180],[205,220],[310,300],[410,235],[520,180],[645,230],[755,315],[860,340],[978,340]]},
+    {name:'潮流の坂道',shape:[[135,120],[815,155],[770,430],[115,385]],slots:[[230,150],[410,160],[610,175],[760,195],[190,365],[390,380],[590,395],[750,375]],route:[[-18,330],[100,330],[205,275],[320,225],[435,270],[545,330],[650,300],[750,235],[865,205],[978,210]]},
+    {name:'まるい岩礁',shape:[[175,125],[320,100],[650,110],[790,155],[835,270],[790,385],[650,435],[310,430],[165,380],[115,270]],slots:[[290,145],[460,135],[630,145],[760,195],[250,385],[430,400],[610,395],[760,345]],route:[[-18,270],[110,270],[205,210],[310,190],[405,245],[500,325],[600,340],[700,285],[805,220],[978,220]]},
+    {name:'細長い沖の網',shape:[[115,145],[830,105],[850,380],[145,435]],slots:[[230,160],[410,150],[600,140],[785,135],[205,395],[400,405],[600,395],[790,385]],route:[[-18,255],[100,255],[210,300],[320,340],[435,300],[550,240],[660,205],[770,245],[870,295],[978,295]]},
+    {name:'二つの潮だまり',shape:[[120,125],[315,125],[390,205],[560,205],[635,125],[825,125],[825,420],[635,420],[560,340],[390,340],[315,420],[120,420]],slots:[[220,155],[340,175],[610,175],[730,155],[220,385],[340,365],[610,365],[730,385]],route:[[-18,270],[105,270],[205,215],[300,245],[400,275],[505,275],[610,245],[710,215],[830,270],[978,270]]},
+    {name:'かくれ岩の迷路',shape:[[125,115],[830,115],[710,235],[830,430],[125,430],[245,235]],slots:[[190,145],[380,145],[580,145],[760,155],[190,395],[380,395],[580,395],[760,395]],route:[[-18,270],[105,270],[205,205],[300,180],[400,250],[500,330],[600,350],[700,305],[820,270],[978,270]]},
+    {name:'北風の大網',shape:[[165,125],[755,105],[845,205],[805,355],[700,430],[255,430],[145,355],[105,205]],slots:[[245,145],[425,135],[620,135],[760,205],[220,390],[420,400],[620,390],[760,335]],route:[[-18,205],[105,205],[200,265],[295,335],[400,300],[500,225],[600,190],[710,240],[825,300],[978,335]]},
+    {name:'入り組む岩場',shape:[[125,110],[825,110],[825,220],[700,220],[700,330],[825,330],[825,435],[125,435],[125,330],[250,330],[250,220],[125,220]],slots:[[180,145],[410,145],[650,145],[765,185],[180,395],[410,395],[650,395],[765,365]],route:[[-18,270],[110,270],[205,195],[315,195],[410,270],[520,345],[630,345],[735,270],[850,270],[978,270]]},
+    {name:'氷見の大定置網',shape:[[125,270],[275,105],[475,150],[665,105],[830,270],[665,435],[475,390],[275,435]],slots:[[270,145],[435,175],[650,145],[760,230],[270,395],[435,365],[650,395],[760,310]],route:[[-18,270],[105,270],[205,330],[300,280],[395,205],[490,230],[590,330],[690,350],[800,285],[978,270]]}
   ];
-  const route = [{x:-18,y:240},{x:104,y:240},{x:188,y:204},{x:291,y:218},{x:384,y:278},{x:504,y:302},{x:620,y:280},{x:716,y:324},{x:819,y:300},{x:978,y:250}];
+  const totalStages = stageMaps.length;
+  let stageIndex = 0, stage = stageMaps[0], pendingStage = 0;
+  let unlockedStage = Math.max(2,Math.min(totalStages,Number(localStorage.getItem('iwashinDefenseUnlocked')||2)));
+  let slots = stage.slots.map(([x,y])=>({x,y}));
+  let route = stage.route.map(([x,y])=>({x,y}));
+  let netShape = stage.shape.map(([x,y])=>({x,y}));
   const trashTypes = ['can','bottle','bag','net','driftwood'];
 
   function resize(){
@@ -46,23 +59,21 @@
     for(let i=0;i<9;i++){let x=i*122+28,y=H-29-(i%3)*8;ctx.fillStyle=i%2?'#458476':'#417e7c';ctx.beginPath();ctx.ellipse(x,y,28,10,-.1,0,Math.PI*2);ctx.fill()}
   }
   function drawNet(){
-    // net perimeter
-    ctx.save();ctx.shadowColor='#b4f2df99';ctx.shadowBlur=12;ctx.strokeStyle='#d3d8a7';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(125,114);ctx.lineTo(795,114);ctx.lineTo(795,430);ctx.lineTo(125,430);ctx.closePath();ctx.stroke();ctx.restore();
-    ctx.fillStyle='rgba(9,43,59,.23)';ctx.fillRect(127,117,665,310);
-    ctx.save();ctx.beginPath();ctx.rect(127,117,665,310);ctx.clip();ctx.lineWidth=1.2;
-    for(let x=125;x<=800;x+=38)line(x,113,x,435,'rgba(224,240,193,.48)',1.2);
-    for(let y=115;y<=435;y+=30)line(122,y,800,y,'rgba(224,240,193,.48)',1.2);
-    // loose strands add depth
-    for(let i=0;i<15;i++){const x=145+i*45;line(x,120,x+16,426,'rgba(180,224,194,.17)',1)}
+    const xs=netShape.map(p=>p.x),ys=netShape.map(p=>p.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+    const polygon=()=>{ctx.beginPath();ctx.moveTo(netShape[0].x,netShape[0].y);for(let i=1;i<netShape.length;i++)ctx.lineTo(netShape[i].x,netShape[i].y);ctx.closePath()};
+    ctx.save();ctx.shadowColor='#b4f2df99';ctx.shadowBlur=12;polygon();ctx.fillStyle='rgba(9,43,59,.23)';ctx.fill();ctx.strokeStyle='#d3d8a7';ctx.lineWidth=7;ctx.stroke();ctx.restore();
+    ctx.save();polygon();ctx.clip();ctx.lineWidth=1.2;
+    for(let x=Math.floor(minX/38)*38;x<=maxX;x+=38)line(x,minY-8,x,maxY+8,'rgba(224,240,193,.48)',1.2);
+    for(let y=Math.floor(minY/30)*30;y<=maxY;y+=30)line(minX-8,y,maxX+8,y,'rgba(224,240,193,.48)',1.2);
+    for(let i=0;i<15;i++){const x=minX+15+i*((maxX-minX-30)/14);line(x,minY+5,x+16,maxY-5,'rgba(180,224,194,.17)',1)}
     ctx.restore();
-    // corner floats
-    for(const [x,y] of [[125,114],[795,114],[125,430],[795,430]]){ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fillStyle='#ffcb76';ctx.fill();ctx.strokeStyle='#fff4d9';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.arc(x-3,y-3,3,0,Math.PI*2);ctx.fillStyle='#fff9db';ctx.fill()}
-    // path over the net
+    for(const {x,y} of netShape){ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fillStyle='#ffcb76';ctx.fill();ctx.strokeStyle='#fff4d9';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.arc(x-2.5,y-2.5,2.5,0,Math.PI*2);ctx.fillStyle='#fff9db';ctx.fill()}
     ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(route[0].x,route[0].y);for(let i=1;i<route.length;i++){let p=route[i];ctx.lineTo(p.x,p.y)}
     ctx.strokeStyle='rgba(255,205,116,.22)';ctx.lineWidth=42;ctx.stroke();ctx.strokeStyle='rgba(255,222,151,.54)';ctx.lineWidth=3;ctx.setLineDash([7,12]);ctx.stroke();ctx.setLineDash([]);
-    // inlet and exit markers
-    rounded(11,222,72,35,17,'#11617a','#9ee1d7');ctx.fillStyle='#efffdf';ctx.font='800 13px sans-serif';ctx.textAlign='center';ctx.fillText('ごみ！',47,245);
-    rounded(855,224,91,37,18,'#174b59','#ef9a79');ctx.fillStyle='#fff1db';ctx.fillText('あみ出口',900,248);
+    const entry={x:Math.max(7,route[0].x+22),y:route[0].y},exit=route[route.length-1];
+    const ey=Math.max(24,Math.min(H-24,entry.y)),xy=Math.max(24,Math.min(H-24,exit.y));
+    rounded(entry.x,ey-17,72,34,17,'#11617a','#9ee1d7');ctx.fillStyle='#efffdf';ctx.font='800 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ごみ！',entry.x+36,ey);
+    const exitX=Math.min(W-97,Math.max(7,exit.x-119));rounded(exitX,xy-18,91,36,18,'#174b59','#ef9a79');ctx.fillStyle='#fff1db';ctx.fillText('あみ出口',exitX+45.5,xy);ctx.textBaseline='alphabetic';
   }
   function drawSlot(slot,i){
     const occupied=towers.find(t=>t.slot===i);
@@ -127,12 +138,37 @@
     $('#fishCards').querySelectorAll('.fish-card').forEach(c=>{const d=kindData[c.dataset.kind];c.classList.toggle('selected',c.dataset.kind===selectedKind);c.setAttribute('aria-pressed',String(c.dataset.kind===selectedKind));c.classList.toggle('unaffordable',pearls<d.cost)});
     $('#waveBtn').disabled=waveLive||wave>=5||(started&&wave>0&&!waveDone);
     $('#waveBtn').innerHTML=!started?'じゅんび開始 <span>▶</span>':wave===0?'ぼうえい開始 <span>▶</span>':`つぎの波へ <span>▶</span>`;
+    $('#stageLabel').innerHTML=`STAGE ${String(stageIndex+1).padStart(2,'0')} <b>${stage.name}</b>`;
     const phase=$('#phaseText'),pill=phase.parentElement;
     pill.classList.toggle('live',waveLive);pill.classList.toggle('alert',hp<=2);
     phase.textContent=waveLive?'ぼうえい中':waveDone?(wave>=5?'クリア！':'じゅんびOK'):started?'じゅんび中':'たいき中';
     $('#sceneTip').textContent=waveLive?'ごみの近くへイワシんを動かそう！':'魚をえらんで、あみの丸をタップ！';
     $('#cleanBtn').classList.toggle('ready',specialReady&&started);
     $('#cleanTimer').textContent=specialReady?'すぐ使える！':`${specialTimer.toFixed(0)}秒でつかえる`;
+  }
+  function setStage(index){
+    stageIndex=Math.max(0,Math.min(totalStages-1,index));stage=stageMaps[stageIndex];
+    slots=stage.slots.map(([x,y])=>({x,y}));route=stage.route.map(([x,y])=>({x,y}));netShape=stage.shape.map(([x,y])=>({x,y}));
+  }
+  function renderStageGrid(){
+    const grid=$('#stageGrid');grid.innerHTML='';
+    stageMaps.forEach((item,i)=>{
+      const unlocked=i<unlockedStage,button=document.createElement('button');button.type='button';button.className='stage-option';button.disabled=!unlocked;button.classList.toggle('selected',i===pendingStage);
+      button.innerHTML=`<b>STAGE ${String(i+1).padStart(2,'0')}</b><span>${unlocked?item.name:'🔒 クリアで解放'}</span><small>${unlocked?`むずかしさ ${'★'.repeat(Math.min(5,1+Math.floor(i/2)))}`:'未解放'}</small>`;
+      button.addEventListener('click',()=>{if(!unlocked)return;pendingStage=i;renderStageGrid()});grid.append(button);
+    });
+    $('#stagePlayBtn').disabled=pendingStage>=unlockedStage;
+    $('#stageDialogNote').textContent=`${unlockedStage}ステージまで解放中。クリアすると次の海が開くよ。`;
+  }
+  function openStageDialog(){pendingStage=stageIndex;renderStageGrid();$('#stageDialog').showModal()}
+  function enterStage(index){
+    setStage(index);started=true;paused=false;wave=0;hp=5+netLevel*2;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;spawnTimer=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;selectedKind='sardine';player.x=88;player.y=345;
+    $('#startScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#missionText').textContent=`STAGE ${stageIndex+1}：${stage.name}を5回のごみの波から守ろう`;
+    updateHUD();draw();toast(`STAGE ${stageIndex+1}「${stage.name}」へ！`)
+  }
+  function returnToTitle(){
+    setStage(0);started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;player.x=88;player.y=345;
+    $('#resultScreen').classList.add('hidden');$('#startScreen').classList.remove('hidden');$('#missionText').textContent='5回のごみの波から あみをまもろう';updateHUD();draw()
   }
   function routePoint(progress){
     const segments=[];let total=0;for(let i=0;i<route.length-1;i++){const a=route[i],b=route[i+1],len=Math.hypot(b.x-a.x,b.y-a.y);segments.push({a,b,len,start:total});total+=len}
@@ -141,7 +177,7 @@
   function beginWave(){
     if(!started){enterPreparation();return}
     if(waveLive||wave>=5)return;
-    wave++;waveLive=true;waveDone=false;spawnLeft=6+wave*2;spawnTimer=.15;$('#missionText').textContent=`ウェーブ ${wave}：あと ${spawnLeft}このごみに注意！`;updateHUD();toast(`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
+    wave++;waveLive=true;waveDone=false;spawnLeft=6+wave*2+stageIndex;spawnTimer=.15;$('#missionText').textContent=`STAGE ${stageIndex+1}・ウェーブ ${wave}：あと ${spawnLeft}このごみに注意！`;updateHUD();toast(`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
   }
   function enterPreparation(){
     if(started)return;
@@ -149,8 +185,8 @@
   }
   function newEnemy(){
     const kind=trashTypes[Math.random()<Math.min(.25,.07+wave*.035)?Math.floor(Math.random()*trashTypes.length):Math.floor(Math.random()*3)];
-    let hpv=kind==='driftwood'?4+wave:kind==='net'?3+wave*.5:kind==='bottle'?2+wave*.4:1.5+wave*.3;
-    enemies.push({kind,x:route[0].x,y:route[0].y,p:0,hp:hpv,maxHp:hpv,speed:(kind==='bag'?42:kind==='net'?35:kind==='driftwood'?29:38)+wave*2,wobble:Math.random()*6,hit:0})
+    let hpv=(kind==='driftwood'?4+wave:kind==='net'?3+wave*.5:kind==='bottle'?2+wave*.4:1.5+wave*.3)*(1+stageIndex*.105);
+    enemies.push({kind,x:route[0].x,y:route[0].y,p:0,hp:hpv,maxHp:hpv,speed:((kind==='bag'?42:kind==='net'?35:kind==='driftwood'?29:38)+wave*2)*(1+stageIndex*.025),wobble:Math.random()*6,hit:0})
   }
   function addPop(x,y,color,n=7){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*140,vy:(Math.random()-.7)*110,r:2+Math.random()*4,life:.5+Math.random()*.35,color})}
   function attackSpecial(){
@@ -164,13 +200,16 @@
   function defeat(enemy){const i=enemies.indexOf(enemy);if(i<0)return;enemies.splice(i,1);pearls+=8+(enemy.kind==='driftwood'?5:0);score+=10;addPop(enemy.x,enemy.y,'#ffe18c',9);updateHUD();sfx(720,.075)}
   function leak(enemy){const i=enemies.indexOf(enemy);if(i<0)return;enemies.splice(i,1);hp=Math.max(0,hp-1);addPop(870,245,'#ff987b',12);toast('あみから ごみがぬけちゃった！');if(hp<=0)endGame(false);updateHUD()}
   function fireTower(t,target){const d=kindData[t.kind];t.cooldown=d.rate/(1+weaponLevel*.2);let dmg=d.damage*(1+weaponLevel*.2)+(t.level-1);shots.push({x:t.x,y:t.y-6,tx:target.x,ty:target.y,enemy:target,damage:dmg,color:d.color,kind:t.kind,life:.16})}
-  function finishWave(){waveLive=false;waveDone=true;updateHUD();if(wave>=5){endGame(true);return}$('#missionText').textContent=`ウェーブ ${wave} をクリア！ 強化して次の波へ` ;toast('ウェーブクリア！よく守ったね！')}
+  function finishWave(){waveLive=false;waveDone=true;updateHUD();if(wave>=5){endGame(true);return}$('#missionText').textContent=`ウェーブ ${wave} をクリア！ 強化して次の波へ`;toast('ウェーブクリア！よく守ったね！')}
   function endGame(win){
     waveLive=false;waveDone=false;paused=true;
     $('#resultFish').src=win?fishImage.src:(sadImage.complete&&sadImage.naturalWidth?sadImage.src:fishImage.src);
-    $('#resultEyebrow').textContent=win?'SEA SAVED!':'TRY AGAIN';$('#resultTitle').textContent=win?'あみをまもった！':'あみがやぶれちゃった…';$('#resultText').textContent=win?`ごみ ${score/10}こをかたづけたよ！ 魚のなかまたちと大活やく！`:'魚のなかまたちと もう一度チャレンジしよう。';$('#resultBtn').textContent=win?'もう一度あそぶ':'もう一度チャレンジ';$('#resultBtn').dataset.restart='yes';$('#resultScreen').classList.remove('hidden');
+    if(win){unlockedStage=Math.max(unlockedStage,Math.min(totalStages,stageIndex+2));localStorage.setItem('iwashinDefenseUnlocked',String(unlockedStage));pearls+=40+stageIndex*10}
+    $('#resultEyebrow').textContent=win?`STAGE ${stageIndex+1} CLEAR!`:'TRY AGAIN';$('#resultTitle').textContent=win?(stageIndex===totalStages-1?'全10ステージ制覇！':'あみをまもった！'):'あみがやぶれちゃった…';$('#resultText').textContent=win?`「${stage.name}」クリア！ ごみ ${score/10}こをかたづけたよ。ボーナス ✦ ${40+stageIndex*10}`:'魚のなかまたちと もう一度チャレンジしよう。';
+    $('#nextStageBtn').hidden=!win||stageIndex>=totalStages-1;$('#retryBtn').hidden=false;$('#stageSelectResultBtn').hidden=false;$('#homeBtn').hidden=false;
+    $('#resultScreen').classList.remove('hidden');
   }
-  function restart(){started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;player.x=88;player.y=345;$('#resultScreen').classList.add('hidden');$('#startScreen').classList.remove('hidden');$('#missionText').textContent='5回のごみの波から あみをまもろう';updateHUD();draw()}
+  function retryStage(){enterStage(stageIndex)}
   function placeOrSelect(x,y){
     if(!started){return}
     const hitSlot=slots.findIndex(s=>Math.hypot(s.x-x,s.y-y)<32);
@@ -204,7 +243,12 @@
   $('#netUpgrade').addEventListener('click',upgradeNet);$('#weaponUpgrade').addEventListener('click',upgradeWeapon);
   $('#towerUpgradeBtn').addEventListener('click',upgradeTower);
   $('#towerRemoveBtn').addEventListener('click',()=>{if(activeTower){pearls+=Math.floor(kindData[activeTower.kind].cost*.45);towers=towers.filter(t=>t!==activeTower);activeTower=null;$('#towerDialog').close();updateHUD();toast('なかまをチームからはずしたよ')}});
-  $('#resultBtn').addEventListener('click',restart);
+  $('#nextStageBtn').addEventListener('click',()=>{if(stageIndex<totalStages-1)enterStage(stageIndex+1)});
+  $('#stageSelectResultBtn').addEventListener('click',openStageDialog);
+  $('#homeBtn').addEventListener('click',returnToTitle);$('#retryBtn').addEventListener('click',retryStage);
+  $('#stageMenuBtn').addEventListener('click',()=>{if(waveLive){toast('ウェーブが終わってからステージをえらんでね');return}openStageDialog()});
+  $('#stagePlayBtn').addEventListener('click',()=>{const chosen=pendingStage;$('#stageDialog').close();enterStage(chosen)});
+  $('#stageBackBtn').addEventListener('click',()=>$('#stageDialog').close());
   $('#helpBtn').addEventListener('click',()=>$('#helpDialog').showModal());
   $('#pauseBtn').addEventListener('click',()=>{if(!started){$('#helpDialog').showModal();return}paused=true;$('#pauseDialog').showModal()});
   $('#resumeBtn').addEventListener('click',()=>{paused=false;$('#pauseDialog').close()});
@@ -214,5 +258,5 @@
   $('#soundBtn').addEventListener('click',()=>{muted=!muted;$('#soundBtn').textContent=muted?'♫':'♪';$('#soundBtn').setAttribute('aria-label',muted?'音をオンにする':'音をオフにする');if(!muted){audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume?.();toast('効果音をオンにしたよ');sfx(660,.14)}else toast('音をオフにしたよ')});
   window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();attackSpecial()}if(e.code==='Escape'){if($('#towerDialog').open)$('#towerDialog').close();else if($('#helpDialog').open)$('#helpDialog').close();else if(started&&!paused){paused=true;$('#pauseDialog').showModal()}}});
   window.addEventListener('resize',resize);window.addEventListener('orientationchange',()=>setTimeout(resize,100));
-  updateHUD();resize();requestAnimationFrame(loop);
+  setStage(0);updateHUD();resize();requestAnimationFrame(loop);
 })();

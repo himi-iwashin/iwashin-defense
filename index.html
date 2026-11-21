@@ -7,7 +7,7 @@
   <meta name="description" content="イワシんと魚の仲間たちで、氷見の定置網を海のごみから守るタワーディフェンスゲーム。">
   <title>イワシン海防隊｜定置網を守れ！</title>
   <link rel="preconnect" href="https://himi-iwashin.github.io">
-  <link rel="stylesheet" href="style.css?v=mobile-20261121">
+  <link rel="stylesheet" href="style.css?v=stages-20261121">
 </head>
 <body>
   <main class="game-shell">
@@ -17,7 +17,7 @@
         <span class="brand-mark" aria-hidden="true">🐟</span>
         <span><b>イワシン海防隊</b><small>ひみの海をまもろう！</small></span>
       </div>
-      <div class="top-actions"><span class="stage-label">STAGE 01 <b>定置網の海</b></span><button id="soundBtn" class="sound-btn" aria-label="音をオンにする" title="音をオン／オフ">♫</button><button id="pauseBtn" class="pause-btn" aria-label="一時停止" title="一時停止">Ⅱ</button></div>
+      <div class="top-actions"><span class="stage-label" id="stageLabel">STAGE 01 <b>定置網の海</b></span><button id="soundBtn" class="sound-btn" aria-label="音をオンにする" title="音をオン／オフ">♫</button><button id="pauseBtn" class="pause-btn" aria-label="一時停止" title="一時停止">Ⅱ</button></div>
     </header>
 
     <section class="statusbar" aria-label="ゲームの状態">
@@ -41,14 +41,14 @@
           </div>
         </div>
         <div class="result-screen hidden" id="resultScreen">
-          <div class="result-card"><img id="resultFish" src="/puzzle-iwashin/iwashin-happy.webp" alt="イワシん"><p class="eyebrow" id="resultEyebrow">WAVE CLEAR!</p><h2 id="resultTitle">あみをまもった！</h2><p id="resultText">つぎのごみの波にそなえよう</p><button id="resultBtn" class="start-btn">つぎの波へ<b>▶</b></button></div>
+          <div class="result-card"><img id="resultFish" src="/puzzle-iwashin/iwashin-happy.webp" alt="イワシん"><p class="eyebrow" id="resultEyebrow">STAGE CLEAR!</p><h2 id="resultTitle">あみをまもった！</h2><p id="resultText">ごみから海を守ったよ！</p><div class="result-actions"><button id="nextStageBtn" class="start-btn">つぎのステージへ<b>▶</b></button><button id="stageSelectResultBtn" class="result-secondary">ステージをえらぶ</button><button id="homeBtn" class="result-secondary">タイトルにもどる</button><button id="retryBtn" class="result-secondary">このステージをもう一度</button></div></div>
         </div>
         <div class="tower-pop hidden" id="towerPop"></div>
         <div class="toast" id="toast" aria-live="polite"></div>
       </div>
 
       <aside class="side-panel">
-        <div class="panel-title"><span class="mini-wave">〰</span><div><b>ぼうえいチーム</b><small>あみの交点に配置しよう</small></div></div>
+        <div class="panel-title"><span class="mini-wave">〰</span><div><b>ぼうえいチーム</b><small>あみの交点に配置しよう</small></div><button id="stageMenuBtn" class="stage-menu-btn">ステージ</button></div>
         <div class="fish-cards" id="fishCards">
           <button class="fish-card selected" data-kind="sardine" aria-pressed="true"><span class="fish-avatar sardine-avatar"><span class="fish-eye"></span></span><span class="fish-info"><b>イワシ隊</b><small>すばやい連続こうげき</small></span><span class="fish-cost">✦ 35</span></button>
           <button class="fish-card" data-kind="mackerel" aria-pressed="false"><span class="fish-avatar mackerel-avatar"><span class="fish-eye"></span></span><span class="fish-info"><b>アジ支援隊</b><small>広いはんいをまもる</small></span><span class="fish-cost">✦ 55</span></button>
@@ -77,6 +77,7 @@
   </dialog>
   <dialog id="pauseDialog" class="help-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>Ⅱ</span><div><small>PAUSE</small><h2>ひと休み</h2></div></div><p class="pause-copy">ゲームを一時停止しています。</p><button class="dialog-ok" id="resumeBtn">ゲームにもどる</button></dialog>
   <dialog id="towerDialog" class="help-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>⚡</span><div><small>FISH UPGRADE</small><h2 id="towerTitle">なかまを強化</h2></div></div><p class="pause-copy" id="towerDescription"></p><button class="dialog-ok" id="towerUpgradeBtn">強化する　✦ 40</button><button class="dialog-secondary" id="towerRemoveBtn">チームからはずす</button></dialog>
-  <script src="game.js?v=mobile-20261121"></script>
+  <dialog id="stageDialog" class="help-dialog stage-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>🗺️</span><div><small>STAGE SELECT</small><h2>ステージをえらぼう</h2></div></div><p class="pause-copy" id="stageDialogNote">クリアしたステージの先が開くよ。</p><div class="stage-grid" id="stageGrid"></div><button class="dialog-ok" id="stagePlayBtn">このステージへ</button><button class="dialog-secondary" id="stageBackBtn">ゲームにもどる</button></dialog>
+  <script src="game.js?v=stages-20261121"></script>
 </body>
 </html>
