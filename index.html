@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07283b">
   <meta name="description" content="イワシんと魚の仲間たちで、氷見の定置網を海のごみから守るタワーディフェンスゲーム。">
-  <title>イワシン海防隊｜定置網を守れ！</title>
+  <title>イワシん海防隊｜定置網を守れ！</title>
   <link rel="preconnect" href="https://himi-iwashin.github.io">
-  <link rel="stylesheet" href="style.css?v=campaign-supports-20261121">
+  <link rel="stylesheet" href="style.css?v=branch-terrain-20261121">
 </head>
 <body>
   <main class="game-shell">
@@ -15,7 +15,7 @@
       <a class="back-link" href="/puzzle-iwashin/" aria-label="イワシんパズルにもどる">⌂</a>
       <div class="brand-lockup">
         <span class="brand-mark" aria-hidden="true">🐟</span>
-        <span><b>イワシン海防隊</b><small>ひみの海をまもろう！</small></span>
+        <span><b>イワシん海防隊</b><small>ひみの海をまもろう！</small></span>
       </div>
       <div class="top-actions"><span class="stage-label" id="stageLabel">STAGE 01 <b>定置網の海</b></span><button id="soundBtn" class="sound-btn" aria-label="音をオンにする" title="音をオン／オフ">♫</button><button id="pauseBtn" class="pause-btn" aria-label="一時停止" title="一時停止">Ⅱ</button></div>
     </header>
@@ -29,12 +29,12 @@
     <section class="play-area">
       <div class="scene-wrap" id="sceneWrap">
         <canvas id="gameCanvas" aria-label="定置網を進むごみから魚の仲間を守るゲーム画面"></canvas>
-        <div class="scene-hud"><span class="phase-pill"><i id="phaseDot"></i><span id="phaseText">たいき中</span></span><span class="scene-tip" id="sceneTip">魚をえらんで、あみの上をタップ！</span></div>
+        <div class="scene-hud"><span class="phase-pill"><i id="phaseDot"></i><span id="phaseText">たいき中</span></span><span class="scene-tip" id="sceneTip">魚をえらんで、あみの上をタップ！</span><span class="wave-forecast" id="waveForecast" aria-live="polite">つぎの波を予告するよ</span></div>
         <div class="start-screen" id="startScreen">
           <div class="start-card">
             <div class="hero-badge"><span class="sun-ray"></span><img src="/puzzle-iwashin/iwashin-happy.webp" alt="イワシん" onerror="this.src='/iwashin/iwashin-fish.webp'"></div>
             <p class="eyebrow">ひみの海をまもろう！</p>
-            <h1>イワシン<br><em>海防隊</em></h1>
+            <h1>イワシん<br><em>海防隊</em></h1>
             <p class="start-copy">魚のなかまと力をあわせて<br>定置網を ごみからまもろう！</p>
             <button class="start-btn" id="startBtn"><span>ぼうえい開始</span><b>▶</b></button>
             <p class="start-note">防衛開始を押してステージを選ぼう</p>
@@ -76,8 +76,8 @@
     <button class="dialog-ok" data-close>わかった！</button>
   </dialog>
   <dialog id="pauseDialog" class="help-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>Ⅱ</span><div><small>PAUSE</small><h2>ひと休み</h2></div></div><p class="pause-copy">ゲームを一時停止しています。</p><button class="dialog-ok" id="resumeBtn">ゲームにもどる</button></dialog>
-  <dialog id="towerDialog" class="help-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>⚡</span><div><small>FISH UPGRADE</small><h2 id="towerTitle">なかまを強化</h2></div></div><p class="pause-copy" id="towerDescription"></p><button class="dialog-ok" id="towerUpgradeBtn">強化する　✦ 40</button><button class="dialog-secondary" id="towerRemoveBtn">チームからはずす</button></dialog>
+  <dialog id="towerDialog" class="help-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>⚡</span><div><small>FISH UPGRADE</small><h2 id="towerTitle">なかまを強化</h2></div></div><p class="pause-copy" id="towerDescription"></p><section class="evolution-choices" id="evolutionChoices" hidden><b>進化をえらぼう</b><button id="evolutionPathA" class="evolution-option"></button><button id="evolutionPathB" class="evolution-option"></button><small>一度進化すると、もう一方はえらべなくなるよ。</small></section><button class="dialog-ok" id="towerUpgradeBtn">強化する　✦ 40</button><button class="dialog-secondary" id="towerRemoveBtn">チームからはずす</button></dialog>
   <dialog id="stageDialog" class="help-dialog stage-dialog"><button class="dialog-close" data-close aria-label="閉じる">×</button><div class="dialog-heading"><span>🗺️</span><div><small>STAGE SELECT</small><h2>ステージをえらぼう</h2></div></div><p class="pause-copy" id="stageDialogNote">クリアしたステージの先が開くよ。</p><div class="stage-grid" id="stageGrid"></div><button class="dialog-ok" id="stagePlayBtn">このステージへ</button><button class="dialog-secondary" id="stageBackBtn">ゲームにもどる</button></dialog>
-  <script src="game.js?v=campaign-supports-20261121"></script>
+  <script src="game.js?v=branch-terrain-20261121"></script>
 </body>
 </html>
