@@ -118,3 +118,20 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
   .aura-track { height: 2px; margin-top: 2px; }
   .wave-btn { font-size: 8px; }
 }
+
+
+/* Branching fish evolution and next-wave forecast */
+.scene-hud { justify-content: flex-start; }
+.wave-forecast { position: absolute; left: 0; top: 34px; max-width: 78%; overflow: hidden; padding: 5px 9px; border: 1px solid #b5f3ed55; border-radius: 9px; background: #06283ddf; color: #fff0c2; font-size: 10px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 4px 14px #00131b55; }
+.evolution-choices { display: grid; gap: 7px; margin: 10px 0; padding: 10px; border: 1px solid #ffe18b55; border-radius: 13px; background: #ffe18b0b; }
+.evolution-choices[hidden] { display: none; }
+.evolution-choices > b { font-size: 12px; color: #ffe6a2; }
+.evolution-option { min-height: 42px; padding: 8px 10px; border: 1px solid #a6e9e555; border-radius: 10px; background: #0d4355; color: #effff0; text-align: left; font-size: 11px; font-weight: 900; line-height: 1.45; }
+.evolution-option:hover:not(:disabled) { border-color: #ffe18b; background: #185366; }
+.evolution-option:disabled { opacity: .45; cursor: not-allowed; }
+.evolution-choices > small { color: #a9cdd1; font-size: 9px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .wave-forecast { top: 28px; left: 0; max-width: 78%; padding: 4px 7px; font-size: 8px; }
+  .evolution-choices { gap: 5px; padding: 8px; margin: 7px 0 9px; }
+  .evolution-option { min-height: 36px; padding: 6px 8px; font-size: 9px; }
+}
