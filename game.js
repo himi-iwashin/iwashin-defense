@@ -124,7 +124,7 @@
   }
   function draw(){
     if(!canvas.width)return;
-    const now=performance.now();drawBg(now);drawNet();
+    const now=performance.now();drawBg(now);drawTerrain();drawNet();
     for(let i=0;i<slots.length;i++)drawSlot(slots[i],i);
     for(const s of shots){ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.tx,s.ty);ctx.strokeStyle=s.color;ctx.lineWidth=(s.kind==='tuna'?9:s.kind==='yellowtail'?6:s.kind==='mackerel'?4:2)+(s.boosted?2:0);ctx.lineCap=s.kind==='tuna'?'round':'butt';ctx.shadowColor=s.color;ctx.shadowBlur=s.kind==='tuna'?20:s.boosted?19:9;ctx.stroke();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(s.tx,s.ty,s.kind==='tuna'?10:s.kind==='yellowtail'?7:s.boosted?6:4,0,Math.PI*2);ctx.fillStyle=s.boosted?'#fff5a6':s.color;ctx.fill();if(s.kind==='tuna'){ctx.beginPath();ctx.arc(s.tx,s.ty,15+Math.sin(now/35)*2,0,Math.PI*2);ctx.strokeStyle='#ffbfd0';ctx.lineWidth=2;ctx.stroke()}}
     for(const e of enemies)drawTrash(e);for(const c of bonusCoins){const p=routePoint(c.p);ctx.save();ctx.translate(p.x,p.y+Math.sin(performance.now()/120+c.phase)*5);ctx.shadowColor='#ffe866';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fillStyle='#ffe866';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#8d5b13';ctx.font='900 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✦',0,1);ctx.restore()}
@@ -134,7 +134,7 @@
   }
   function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1600)}
   function updateHUD(){
-    $('#netHp').textContent=hp;$('#healthFill').style.width=`${Math.max(0,hp/(5+netLevel*2)*100)}%`;$('#netHp').nextElementSibling.textContent=` / ${5+netLevel*2}`;$('#pearls').textContent=pearls;$('#waveNum').textContent=wave;
+    $('#waveForecast').textContent=nextTrash();$('#netHp').textContent=hp;$('#healthFill').style.width=`${Math.max(0,hp/(5+netLevel*2)*100)}%`;$('#netHp').nextElementSibling.textContent=` / ${5+netLevel*2}`;$('#pearls').textContent=pearls;$('#waveNum').textContent=wave;
     $('#wavePips').innerHTML=Array.from({length:5},(_,i)=>`<i class="${i<wave?'done':''}"></i>`).join('');
     $('#teamCount').textContent=`なかま ${towers.length}ひき`;
     const auraHasFish=auraActive&&towers.some(t=>Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius);
@@ -154,8 +154,15 @@
     const energyPct=Math.round(auraEnergy);$('#auraFill').style.width=`${energyPct}%`;$('#auraStatus').textContent=auraActive?`応援中 ${energyPct}%`:`元気 ${energyPct}%`;
     $('#auraBtn').disabled=!started||auraEnergy<=0;$('#auraBtn').classList.toggle('active',auraActive);$('#auraBtn').setAttribute('aria-pressed',String(auraActive));
   }
+  const branchNames={sardine:['れんぞく型','つらぬき型'],mackerel:['ひろがり型','連射型'],tuna:['大物くだき型','高速型'],yellowtail:['網破り型','高速型']};
+  const waveTrash=[['空き缶・ペットボトル'],['空き瓶・プラスチックごみ'],['漁網・流木・ガラス'],['タイヤ・油ごみ・漁網'],['大型ごみ・中ボス']];
+  function nextTrash(){const i=Math.min(4,wave);return 'つぎの波：'+waveTrash[i][0]+(i===4?'　★中ボス！':'')}
+  function setupTerrain(i){stage.gimmick={type:i%2?'current':'kelp',x:230+(i*97)%500,y:145+(i*61)%245,r:64+(i%3)*9}}
+  function drawTerrain(){const g=stage.gimmick;if(!g)return;ctx.save();ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,Math.PI*2);ctx.fillStyle=g.type==='current'?'#63dfff20':'#59e3a520';ctx.fill();ctx.setLineDash([8,7]);ctx.lineWidth=3;ctx.strokeStyle=g.type==='current'?'#71e7ff99':'#7bf0b899';ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#effff2';ctx.font='900 11px sans-serif';ctx.textAlign='center';ctx.fillText(g.type==='current'?'潮流：ごみが速くなる':'海藻：ごみが遅くなる',g.x,g.y-g.r-8);ctx.restore()}
+  function chooseEvolution(path){if(!activeTower||activeTower.evolution)return;activeTower.evolution=path;toast(path==='power'?'パワー型！攻撃力アップ・攻撃間隔長め':'連射型！攻撃間隔短縮・攻撃力ひかえめ');$('#towerDialog').close();activeTower=null}
+  $('#evolutionPathA')?.addEventListener('click',()=>chooseEvolution('power'));$('#evolutionPathB')?.addEventListener('click',()=>chooseEvolution('swift'));
   function setStage(index){
-    stageIndex=Math.max(0,Math.min(totalStages-1,index));stage=stageMaps[stageIndex];
+    stageIndex=Math.max(0,Math.min(totalStages-1,index));stage=stageMaps[stageIndex];setupTerrain(stageIndex);
     slots=stage.slots.map(([x,y])=>({x,y}));route=stage.route.map(([x,y])=>({x,y}));netShape=stage.shape.map(([x,y])=>({x,y}));
   }
   function renderStageGrid(){
@@ -214,7 +221,7 @@
   function defeat(enemy){const i=enemies.indexOf(enemy);if(i<0)return;enemies.splice(i,1);pearls+=8+(enemy.kind==='driftwood'?5:0);score+=10;addPop(enemy.x,enemy.y,'#ffe18c',9);updateHUD();sfx(720,.075)}
   function leak(enemy){const i=enemies.indexOf(enemy);if(i<0)return;enemies.splice(i,1);hp=Math.max(0,hp-1);addPop(870,245,'#ff987b',12);toast('あみから ごみがぬけちゃった！');if(hp<=0)endGame(false);updateHUD()}
   function inIwashinAura(t){return auraActive&&Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius}
-  function fireTower(t,target){const d=kindData[t.kind],boosted=inIwashinAura(t);t.cooldown=d.rate/(1+weaponLevel*.2)*(boosted?.82:1);let dmg=(d.damage*(1+weaponLevel*.2)+(t.level-1))*(boosted?1.2:1);shots.push({x:t.x,y:t.y-6,tx:target.x,ty:target.y,enemy:target,damage:dmg,color:boosted?'#ffe866':d.color,boosted,boosted,kind:t.kind,life:t.kind==='tuna'?.27:.16})}
+  function fireTower(t,target){const d=kindData[t.kind],boosted=inIwashinAura(t),power=t.evolution==='power',swift=t.evolution==='swift';t.cooldown=d.rate*(power?1.38:swift?.68:1)/(1+weaponLevel*.2)*(boosted?.82:1);let dmg=(d.damage*(power?1.65:swift?.82:1)*(1+weaponLevel*.2)+(t.level-1))*(boosted?1.2:1);shots.push({x:t.x,y:t.y-6,tx:target.x,ty:target.y,enemy:target,damage:dmg,color:power?'#ffad4f':swift?'#72f6ff':boosted?'#ffe866':d.color,boosted,kind:t.kind,life:t.kind==='tuna'?.27:.16})}
   function finishWave(){waveLive=false;waveDone=true;auraActive=false;updateHUD();if(wave>=5){endGame(true);return}waveStartTimer=6;$('#missionText').textContent=`ウェーブ ${wave} をクリア！ 6秒後に次の波へ`;toast('ウェーブクリア！よく守ったね！')}
   function endGame(win){
     waveLive=false;waveDone=false;paused=true;auraActive=false;
@@ -232,7 +239,7 @@
     player.x=Math.max(38,Math.min(W-38,x));player.y=Math.max(65,Math.min(H-55,y));player.blink=.18;return
   }
   function canvasPoint(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H}}
-  function openTower(t){activeTower=t;const d=kindData[t.kind],refund=Math.floor(d.cost*.45);$('#towerTitle').textContent=`${d.name} Lv.${t.level}`;$('#towerDescription').textContent=`${d.speed}・射程 ${d.range}　攻撃力 ${Math.round(d.damage*(1+weaponLevel*.2)+(t.level-1))}　攻撃間隔 約${d.rate}秒。`;$('#towerUpgradeBtn').textContent=`強化する　✦ ${d.upgrade+(t.level-1)*30}`;$('#towerUpgradeBtn').disabled=pearls<d.upgrade+(t.level-1)*30;$('#towerRemoveBtn').textContent=`チームからはずす　返却✦${refund}`;$('#towerDialog').showModal()}
+  function openTower(t){activeTower=t;const d=kindData[t.kind],refund=Math.floor(d.cost*.45),opts=branchNames[t.kind];$('#towerTitle').textContent=d.name+' Lv.'+t.level;$('#towerDescription').textContent=d.speed+'・射程 '+d.range+'　攻撃力 '+Math.round(d.damage*(1+weaponLevel*.2)+(t.level-1))+'　攻撃間隔 約'+d.rate+'秒。';$('#evolutionChoices').hidden=!opts||!!t.evolution;if(opts){$('#evolutionPathA').textContent=opts[0]+'：攻撃力 +65%、攻撃間隔 +38%';$('#evolutionPathB').textContent=opts[1]+'：攻撃力 -18%、攻撃間隔 -32%';$('#evolutionPathA').disabled=$('#evolutionPathB').disabled=!!t.evolution}$('#towerUpgradeBtn').textContent='強化する　✦ '+(d.upgrade+(t.level-1)*30);$('#towerUpgradeBtn').disabled=pearls<d.upgrade+(t.level-1)*30;$('#towerRemoveBtn').textContent='チームからはずす　返却✦'+refund;$('#towerDialog').showModal()}
   function upgradeTower(){if(!activeTower)return;const d=kindData[activeTower.kind],cost=d.upgrade+(activeTower.level-1)*30;if(pearls<cost){toast('ポイントがたりないよ');return}pearls-=cost;activeTower.level++;activeTower.cooldown=0;addPop(activeTower.x,activeTower.y,'#ffe08a',12);$('#towerDialog').close();toast(`${d.name} が進化した！ Lv.${activeTower.level}`);updateHUD()}
   function upgradeNet(){const cost=45+netLevel*35;if(pearls<cost){toast('ポイントがたりないよ');return}pearls-=cost;netLevel++;hp=Math.min(5+netLevel*2,hp+2);addPop(490,115,'#a7fff0',16);toast('あみが つよくなった！耐久力も回復！');updateHUD()}
   function upgradeWeapon(){const cost=60+weaponLevel*45;if(pearls<cost){toast('ポイントがたりないよ');return}pearls-=cost;weaponLevel++;addPop(490,264,'#ffd477',15);toast(`魚みんなの ぶきがパワーアップ！ Lv.${weaponLevel+1}`);updateHUD()}
@@ -243,8 +250,8 @@
       if(auraWorking){auraEnergy=Math.max(0,auraEnergy-auraDrain*dt);if(auraEnergy===0){auraActive=false;toast('元気を使い切ったよ。休むと回復するよ！')}}
       else if(!auraActive||!waveLive)auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
       if(waveLive){for(const coin of bonusCoins){coin.p+=dt*.045;coin.life-=dt}bonusCoins=bonusCoins.filter(c=>c.life>0&&c.p<1);spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
-        for(const e of [...enemies]){e.wobble+=dt*4;e.slowTimer=Math.max(0,(e.slowTimer||0)-dt);e.freezeTimer=Math.max(0,(e.freezeTimer||0)-dt);e.p+=e.speed*dt/1030*(e.freezeTimer>0?0:e.slowTimer>0?e.slowFactor:1);const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
-        for(const t of towers){if(t.kind==='jelly'){const range=kindData.jelly.range+(t.level-1)*12;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<range){e.slowTimer=.16;e.slowFactor=.65}}}else if(t.kind==='squid'){t.cooldown-=dt;if(t.cooldown<=0){let hit=0;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<kindData.squid.range+(t.level-1)*12){e.slowTimer=1.6+(t.level-1)*.2;e.slowFactor=.45;hit++;addPop(e.x,e.y,'#b9f7ff',3)}}t.cooldown=kindData.squid.rate;if(hit)toast('イカの墨！敵の群れがスローダウン！')}}else if(t.kind==='octopus'){t.cooldown-=dt;if(t.cooldown<=0){const target=enemies.filter(e=>Math.hypot(e.x-t.x,e.y-t.y)<kindData.octopus.range+(t.level-1)*12).sort((a,b)=>b.p-a.p)[0];t.cooldown=kindData.octopus.rate;if(target){target.freezeTimer=1.1+(t.level-1)*.15;addPop(target.x,target.y,'#ff9eaf',12);toast('タコの足！敵を足止め！')}}}}for(const t of towers){const d=kindData[t.kind];if(d.support)continue;t.cooldown-=dt;const range=d.range*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
+        for(const e of [...enemies]){e.wobble+=dt*4;e.slowTimer=Math.max(0,(e.slowTimer||0)-dt);e.freezeTimer=Math.max(0,(e.freezeTimer||0)-dt);e.p+=e.speed*dt/1030*(e.freezeTimer>0?0:e.slowTimer>0?e.slowFactor:1)*(stage.gimmick&&Math.hypot(e.x-stage.gimmick.x,e.y-stage.gimmick.y)<stage.gimmick.r?(stage.gimmick.type==='kelp'?.62:1.42):1);const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
+        for(const t of towers){if(t.kind==='jelly'){const range=kindData.jelly.range+(t.level-1)*12;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<range){e.slowTimer=.16;e.slowFactor=.65}}}else if(t.kind==='squid'){t.cooldown-=dt;if(t.cooldown<=0){let hit=0;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<kindData.squid.range+(t.level-1)*12){e.slowTimer=1.6+(t.level-1)*.2;e.slowFactor=.45;hit++;addPop(e.x,e.y,'#b9f7ff',3)}}t.cooldown=kindData.squid.rate;if(hit)toast('イカの墨！敵の群れがスローダウン！')}}else if(t.kind==='octopus'){t.cooldown-=dt;if(t.cooldown<=0){const target=enemies.filter(e=>Math.hypot(e.x-t.x,e.y-t.y)<kindData.octopus.range+(t.level-1)*12).sort((a,b)=>b.p-a.p)[0];t.cooldown=kindData.octopus.rate;if(target){target.freezeTimer=1.1+(t.level-1)*.15;addPop(target.x,target.y,'#ff9eaf',12);toast('タコの足！敵を足止め！')}}}}for(const t of towers){const d=kindData[t.kind];if(d.support)continue;t.cooldown-=dt;const range=d.range*(t.evolution==='power'?.94:t.evolution==='swift'?1.08:1)*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
         for(const s of [...shots]){s.life-=dt;if(s.life<=0){if(s.enemy&&enemies.includes(s.enemy)){s.enemy.hp-=s.damage;s.enemy.hit=.12;if(s.enemy.hp<=0)defeat(s.enemy);if(s.kind==='mackerel'){addPop(s.tx,s.ty,'#71f1cd',8);for(const e of [...enemies])if(e!==s.enemy&&Math.hypot(e.x-s.tx,e.y-s.ty)<48){e.hp-=1.2;if(e.hp<=0)defeat(e)}}else if(s.kind==='tuna')addPop(s.tx,s.ty,'#fb6c9a',16);else if(s.kind==='yellowtail')addPop(s.tx,s.ty,'#ffad69',11)}shots.splice(shots.indexOf(s),1)}}
         if(spawnLeft===0&&enemies.length===0)finishWave();
       }
