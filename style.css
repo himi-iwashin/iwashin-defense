@@ -95,3 +95,26 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
   .stage-option { min-height: 57px; padding: 6px 7px; }
   .stage-option span { font-size: 10px; }
 }
+
+/* Iwashin's stamina based support aura */
+.aura-btn { min-width: 152px; height: 45px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 4px 9px; border: 1px solid #83e8d45c; border-radius: 13px; background: linear-gradient(120deg,#103e4d,#0b2d3d); color: #caffef; text-align: left; transition: background .16s,border-color .16s,box-shadow .16s; }
+.aura-btn.active { border-color: #a8ffdb; background: linear-gradient(120deg,#1a665d,#17495a); box-shadow: 0 0 16px #80ffe633; }
+.aura-btn:disabled { opacity: .48; cursor: not-allowed; }
+.aura-symbol { flex: 0 0 auto; color: #ffe08a; font-size: 17px; }
+.aura-copy { display: block; min-width: 0; flex: 1; }
+.aura-copy b { display: block; font-size: 9px; white-space: nowrap; }
+.aura-copy small { display: block; margin-top: 1px; color: #b6d9d7; font-size: 8px; white-space: nowrap; }
+.aura-track { display: block; width: 100%; height: 3px; margin-top: 3px; overflow: hidden; border-radius: 5px; background: #ffffff25; }
+.aura-track i { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#6de6c1,#d4f894); transition: width .16s; }
+@media(max-width:760px) {
+  .bottom-bar { flex-wrap: wrap; }
+  .mission { flex: 1 1 100%; }
+  .bottom-actions { flex: 1 1 100%; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; }
+  .clean-btn,.aura-btn,.wave-btn { width: 100%; min-width: 0; height: 39px; padding: 4px 6px; gap: 4px; }
+  .clean-btn { justify-content: center; }
+  .aura-symbol { font-size: 13px; }
+  .aura-copy b { font-size: 7px; }
+  .aura-copy small { font-size: 6px; }
+  .aura-track { height: 2px; margin-top: 2px; }
+  .wave-btn { font-size: 8px; }
+}

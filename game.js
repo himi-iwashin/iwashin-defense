@@ -10,6 +10,8 @@
   let hp = 5, pearls = 120, weaponLevel = 0, netLevel = 0, score = 0;
   let enemies = [], towers = [], shots = [], particles = [], spawnLeft = 0, spawnTimer = 0;
   let waveLive = false, waveDone = false, specialReady = true, specialTimer = 0;
+  let auraEnergy = 100, auraActive = false;
+  const auraRadius = 158, auraDrain = 12, auraRecover = 8;
   let lastTime = 0, toastTimer = 0, activeTower = null, hudAccumulator = 0;
   let muted = true, audioCtx = null;
   const player = {x: 88, y: 345, blink: 0};
@@ -113,7 +115,9 @@
     ctx.fillStyle='#fff2d9';ctx.font='900 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(e.hp>1?`×${Math.ceil(e.hp)}`:'',e.x,e.y+23)
   }
   function drawPlayer(){
-    const x=player.x,y=player.y;ctx.save();ctx.beginPath();ctx.ellipse(x,y+26,25,7,0,0,Math.PI*2);ctx.fillStyle='#00263855';ctx.fill();
+    const x=player.x,y=player.y;
+    if(auraActive){ctx.save();ctx.beginPath();ctx.arc(x,y,auraRadius,0,Math.PI*2);ctx.fillStyle='rgba(103,239,205,.10)';ctx.fill();ctx.setLineDash([11,8]);ctx.lineDashOffset=-(performance.now()/45)%19;ctx.strokeStyle='rgba(146,255,224,.8)';ctx.lineWidth=3;ctx.stroke();ctx.restore()}
+    ctx.save();ctx.beginPath();ctx.ellipse(x,y+26,25,7,0,0,Math.PI*2);ctx.fillStyle='#00263855';ctx.fill();
     if(fishImage.complete&&fishImage.naturalWidth){ctx.drawImage(fishImage,x-28,y-33,56,56)}else drawFish(x,y,'#59c9df',.9,1,'sardine');
     ctx.beginPath();ctx.arc(x,y-35,3,0,Math.PI*2);ctx.fillStyle='#fff4b6';ctx.fill();ctx.restore()
   }
@@ -132,7 +136,7 @@
     $('#netHp').textContent=hp;$('#healthFill').style.width=`${Math.max(0,hp/(5+netLevel*2)*100)}%`;$('#netHp').nextElementSibling.textContent=` / ${5+netLevel*2}`;$('#pearls').textContent=pearls;$('#waveNum').textContent=wave;
     $('#wavePips').innerHTML=Array.from({length:5},(_,i)=>`<i class="${i<wave?'done':''}"></i>`).join('');
     $('#teamCount').textContent=`なかま ${towers.length}ひき`;
-    $('#teamHint').textContent=towers.length?`ぶき Lv.${weaponLevel+1}　あみ Lv.${netLevel+1}`:'魚カードをえらんでね';
+    $('#teamHint').textContent=auraActive?'応援エリア内の魚を強化中！':towers.length?`ぶき Lv.${weaponLevel+1}　あみ Lv.${netLevel+1}`:'魚カードをえらんでね';
     $('#netUpgradeText').textContent=`耐久 +2　✦ ${45+netLevel*35}`;
     $('#weaponUpgradeText').textContent=`こうげき +20%　✦ ${60+weaponLevel*45}`;
     $('#fishCards').querySelectorAll('.fish-card').forEach(c=>{const d=kindData[c.dataset.kind];c.classList.toggle('selected',c.dataset.kind===selectedKind);c.setAttribute('aria-pressed',String(c.dataset.kind===selectedKind));c.classList.toggle('unaffordable',pearls<d.cost)});
@@ -145,6 +149,8 @@
     $('#sceneTip').textContent=waveLive?'ごみの近くへイワシんを動かそう！':'魚をえらんで、あみの丸をタップ！';
     $('#cleanBtn').classList.toggle('ready',specialReady&&started);
     $('#cleanTimer').textContent=specialReady?'すぐ使える！':`${specialTimer.toFixed(0)}秒でつかえる`;
+    const energyPct=Math.round(auraEnergy);$('#auraFill').style.width=`${energyPct}%`;$('#auraStatus').textContent=auraActive?`応援中 ${energyPct}%`:`元気 ${energyPct}%`;
+    $('#auraBtn').disabled=!started||auraEnergy<=0;$('#auraBtn').classList.toggle('active',auraActive);$('#auraBtn').setAttribute('aria-pressed',String(auraActive));
   }
   function setStage(index){
     stageIndex=Math.max(0,Math.min(totalStages-1,index));stage=stageMaps[stageIndex];
@@ -162,12 +168,12 @@
   }
   function openStageDialog(){pendingStage=stageIndex;renderStageGrid();$('#stageDialog').showModal()}
   function enterStage(index){
-    setStage(index);started=true;paused=false;wave=0;hp=5+netLevel*2;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;spawnTimer=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;selectedKind='sardine';player.x=88;player.y=345;
+    setStage(index);started=true;paused=false;wave=0;hp=5+netLevel*2;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;spawnTimer=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;selectedKind='sardine';player.x=88;player.y=345;
     $('#startScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#missionText').textContent=`STAGE ${stageIndex+1}：${stage.name}を5回のごみの波から守ろう`;
     updateHUD();draw();toast(`STAGE ${stageIndex+1}「${stage.name}」へ！`)
   }
   function returnToTitle(){
-    setStage(0);started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;player.x=88;player.y=345;
+    setStage(0);started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;player.x=88;player.y=345;
     $('#resultScreen').classList.add('hidden');$('#startScreen').classList.remove('hidden');$('#missionText').textContent='5回のごみの波から あみをまもろう';updateHUD();draw()
   }
   function routePoint(progress){
@@ -182,6 +188,12 @@
   function enterPreparation(){
     if(started)return;
     started=true;$('#startScreen').classList.add('hidden');updateHUD();toast('魚を配置して、ぼうえい開始！')
+  }
+  function toggleAura(){
+    if(!started)return;
+    if(auraActive){auraActive=false;toast('イワシんはひと休み。元気をためるよ！')}
+    else if(auraEnergy>0){auraActive=true;toast('イワシん応援！近くの魚がパワーアップ！')}
+    updateHUD();draw()
   }
   function newEnemy(){
     const kind=trashTypes[Math.random()<Math.min(.25,.07+wave*.035)?Math.floor(Math.random()*trashTypes.length):Math.floor(Math.random()*3)];
@@ -199,10 +211,11 @@
   }
   function defeat(enemy){const i=enemies.indexOf(enemy);if(i<0)return;enemies.splice(i,1);pearls+=8+(enemy.kind==='driftwood'?5:0);score+=10;addPop(enemy.x,enemy.y,'#ffe18c',9);updateHUD();sfx(720,.075)}
   function leak(enemy){const i=enemies.indexOf(enemy);if(i<0)return;enemies.splice(i,1);hp=Math.max(0,hp-1);addPop(870,245,'#ff987b',12);toast('あみから ごみがぬけちゃった！');if(hp<=0)endGame(false);updateHUD()}
-  function fireTower(t,target){const d=kindData[t.kind];t.cooldown=d.rate/(1+weaponLevel*.2);let dmg=d.damage*(1+weaponLevel*.2)+(t.level-1);shots.push({x:t.x,y:t.y-6,tx:target.x,ty:target.y,enemy:target,damage:dmg,color:d.color,kind:t.kind,life:.16})}
-  function finishWave(){waveLive=false;waveDone=true;updateHUD();if(wave>=5){endGame(true);return}$('#missionText').textContent=`ウェーブ ${wave} をクリア！ 強化して次の波へ`;toast('ウェーブクリア！よく守ったね！')}
+  function inIwashinAura(t){return auraActive&&Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius}
+  function fireTower(t,target){const d=kindData[t.kind],boosted=inIwashinAura(t);t.cooldown=d.rate/(1+weaponLevel*.2)*(boosted?.82:1);let dmg=(d.damage*(1+weaponLevel*.2)+(t.level-1))*(boosted?1.2:1);shots.push({x:t.x,y:t.y-6,tx:target.x,ty:target.y,enemy:target,damage:dmg,color:boosted?'#a5ffe3':d.color,kind:t.kind,life:.16})}
+  function finishWave(){waveLive=false;waveDone=true;auraActive=false;updateHUD();if(wave>=5){endGame(true);return}$('#missionText').textContent=`ウェーブ ${wave} をクリア！ 強化して次の波へ`;toast('ウェーブクリア！よく守ったね！')}
   function endGame(win){
-    waveLive=false;waveDone=false;paused=true;
+    waveLive=false;waveDone=false;paused=true;auraActive=false;
     $('#resultFish').src=win?fishImage.src:(sadImage.complete&&sadImage.naturalWidth?sadImage.src:fishImage.src);
     if(win){unlockedStage=Math.max(unlockedStage,Math.min(totalStages,stageIndex+2));localStorage.setItem('iwashinDefenseUnlocked',String(unlockedStage));pearls+=40+stageIndex*10}
     $('#resultEyebrow').textContent=win?`STAGE ${stageIndex+1} CLEAR!`:'TRY AGAIN';$('#resultTitle').textContent=win?(stageIndex===totalStages-1?'全10ステージ制覇！':'あみをまもった！'):'あみがやぶれちゃった…';$('#resultText').textContent=win?`「${stage.name}」クリア！ ごみ ${score/10}こをかたづけたよ。ボーナス ✦ ${40+stageIndex*10}`:'魚のなかまたちと もう一度チャレンジしよう。';
@@ -224,9 +237,11 @@
   function tick(dt,now){
     if(!paused){
       if(!specialReady){specialTimer=Math.max(0,specialTimer-dt);if(specialTimer===0)specialReady=true}
+      if(auraActive&&waveLive){auraEnergy=Math.max(0,auraEnergy-auraDrain*dt);if(auraEnergy===0){auraActive=false;toast('元気を使い切ったよ。休むと回復するよ！')}}
+      else if(!auraActive)auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
       if(waveLive){spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
         for(const e of [...enemies]){e.wobble+=dt*4;e.p+=e.speed*dt/1030;const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
-        for(const t of towers){t.cooldown-=dt;const d=kindData[t.kind];if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<d.range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
+        for(const t of towers){t.cooldown-=dt;const d=kindData[t.kind],range=d.range*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
         for(const s of [...shots]){s.life-=dt;if(s.life<=0){if(s.enemy&&enemies.includes(s.enemy)){s.enemy.hp-=s.damage;s.enemy.hit=.12;if(s.enemy.hp<=0)defeat(s.enemy)}shots.splice(shots.indexOf(s),1)}}
         if(spawnLeft===0&&enemies.length===0)finishWave();
       }
@@ -240,6 +255,7 @@
   $('#fishCards').addEventListener('click',e=>{const card=e.target.closest('.fish-card');if(!card)return;selectedKind=card.dataset.kind;updateHUD();if(!started)toast(`${kindData[selectedKind].name} を配置できるよ`)});
   $('#startBtn').addEventListener('click',enterPreparation);
   $('#waveBtn').addEventListener('click',beginWave);$('#cleanBtn').addEventListener('click',attackSpecial);
+  $('#auraBtn').addEventListener('click',toggleAura);
   $('#netUpgrade').addEventListener('click',upgradeNet);$('#weaponUpgrade').addEventListener('click',upgradeWeapon);
   $('#towerUpgradeBtn').addEventListener('click',upgradeTower);
   $('#towerRemoveBtn').addEventListener('click',()=>{if(activeTower){pearls+=Math.floor(kindData[activeTower.kind].cost*.45);towers=towers.filter(t=>t!==activeTower);activeTower=null;$('#towerDialog').close();updateHUD();toast('なかまをチームからはずしたよ')}});
