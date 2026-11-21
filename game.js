@@ -10,7 +10,7 @@
   let hp = 5, pearls = 120, weaponLevel = 0, netLevel = 0, score = 0;
   let enemies = [], towers = [], shots = [], particles = [], spawnLeft = 0, spawnTimer = 0;
   let waveLive = false, waveDone = false, specialReady = true, specialTimer = 0;
-  let lastTime = 0, toastTimer = 0, activeTower = null;
+  let lastTime = 0, toastTimer = 0, activeTower = null, hudAccumulator = 0;
   let muted = true, audioCtx = null;
   const player = {x: 88, y: 345, blink: 0};
   const kindData = {
@@ -189,7 +189,7 @@
       }
       for(const p of [...particles]){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=36*dt;if(p.life<=0)particles.splice(particles.indexOf(p),1)}
     }
-    draw();updateHUD();requestAnimationFrame(loop)
+    draw();hudAccumulator+=dt;if(hudAccumulator>=.1){updateHUD();hudAccumulator=0}requestAnimationFrame(loop)
   }
   function loop(now){if(!lastTime)lastTime=now;let dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;tick(dt,now)}
 
