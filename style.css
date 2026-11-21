@@ -135,3 +135,11 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
   .evolution-choices { gap: 5px; padding: 8px; margin: 7px 0 9px; }
   .evolution-option { min-height: 36px; padding: 6px 8px; font-size: 9px; }
 }
+
+
+/* Keep the game board inside its grid column beside the taller fish roster. */
+.play-area { align-items: start; }
+.scene-wrap { width: 100%; height: auto; min-height: 0; }
+@media (max-width: 760px) {
+  .scene-wrap { width: 100%; height: auto; min-height: 0; }
+}
