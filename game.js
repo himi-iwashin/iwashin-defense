@@ -222,7 +222,7 @@
     if(win){unlockedStage=Math.max(unlockedStage,Math.min(totalStages,stageIndex+2));localStorage.setItem('iwashinDefenseUnlocked',String(unlockedStage));pearls+=40+stageIndex*10}
     $('#resultEyebrow').textContent=win?`STAGE ${stageIndex+1} CLEAR!`:'TRY AGAIN';$('#resultTitle').textContent=win?(stageIndex===totalStages-1?'全10ステージ制覇！':'あみをまもった！'):'あみがやぶれちゃった…';$('#resultText').textContent=win?`「${stage.name}」クリア！ ごみ ${score/10}こをかたづけたよ。ボーナス ✦ ${40+stageIndex*10}`:'魚のなかまたちと もう一度チャレンジしよう。';
     $('#nextStageBtn').hidden=!win||stageIndex>=totalStages-1;$('#retryBtn').hidden=false;$('#stageSelectResultBtn').hidden=false;$('#homeBtn').hidden=false;
-    $('#resultScreen').classList.remove('hidden');
+    const result=$('#resultScreen');result.classList.remove('win','fail');result.classList.add(win?'win':'fail');result.classList.remove('hidden');
   }
   function retryStage(){enterStage(stageIndex)}
   function placeOrSelect(x,y){
@@ -232,7 +232,7 @@
     player.x=Math.max(38,Math.min(W-38,x));player.y=Math.max(65,Math.min(H-55,y));player.blink=.18;return
   }
   function canvasPoint(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H}}
-  function openTower(t){activeTower=t;const d=kindData[t.kind];$('#towerTitle').textContent=`${d.name} Lv.${t.level}`;$('#towerDescription').textContent=`射程 ${d.range}　こうげき ${Math.round(d.damage*(1+weaponLevel*.2)+(t.level-1))}　次の強化で攻撃力アップ。`;$('#towerUpgradeBtn').textContent=`強化する　✦ ${d.upgrade+(t.level-1)*30}`;$('#towerUpgradeBtn').disabled=pearls<d.upgrade+(t.level-1)*30;$('#towerDialog').showModal()}
+  function openTower(t){activeTower=t;const d=kindData[t.kind],refund=Math.floor(d.cost*.45);$('#towerTitle').textContent=`${d.name} Lv.${t.level}`;$('#towerDescription').textContent=`${d.speed}・射程 ${d.range}　攻撃力 ${Math.round(d.damage*(1+weaponLevel*.2)+(t.level-1))}　攻撃間隔 約${d.rate}秒。`;$('#towerUpgradeBtn').textContent=`強化する　✦ ${d.upgrade+(t.level-1)*30}`;$('#towerUpgradeBtn').disabled=pearls<d.upgrade+(t.level-1)*30;$('#towerRemoveBtn').textContent=`チームからはずす　返却✦${refund}`;$('#towerDialog').showModal()}
   function upgradeTower(){if(!activeTower)return;const d=kindData[activeTower.kind],cost=d.upgrade+(activeTower.level-1)*30;if(pearls<cost){toast('ポイントがたりないよ');return}pearls-=cost;activeTower.level++;activeTower.cooldown=0;addPop(activeTower.x,activeTower.y,'#ffe08a',12);$('#towerDialog').close();toast(`${d.name} が進化した！ Lv.${activeTower.level}`);updateHUD()}
   function upgradeNet(){const cost=45+netLevel*35;if(pearls<cost){toast('ポイントがたりないよ');return}pearls-=cost;netLevel++;hp=Math.min(5+netLevel*2,hp+2);addPop(490,115,'#a7fff0',16);toast('あみが つよくなった！耐久力も回復！');updateHUD()}
   function upgradeWeapon(){const cost=60+weaponLevel*45;if(pearls<cost){toast('ポイントがたりないよ');return}pearls-=cost;weaponLevel++;addPop(490,264,'#ffd477',15);toast(`魚みんなの ぶきがパワーアップ！ Lv.${weaponLevel+1}`);updateHUD()}
@@ -261,7 +261,7 @@
   $('#auraBtn').addEventListener('click',toggleAura);
   $('#netUpgrade').addEventListener('click',upgradeNet);$('#weaponUpgrade').addEventListener('click',upgradeWeapon);
   $('#towerUpgradeBtn').addEventListener('click',upgradeTower);
-  $('#towerRemoveBtn').addEventListener('click',()=>{if(activeTower){pearls+=Math.floor(kindData[activeTower.kind].cost*.45);towers=towers.filter(t=>t!==activeTower);activeTower=null;$('#towerDialog').close();updateHUD();toast('なかまをチームからはずしたよ')}});
+  $('#towerRemoveBtn').addEventListener('click',()=>{if(activeTower){const d=kindData[activeTower.kind],refund=Math.floor(d.cost*.45);if(!confirm(`チームからはずしますか？ ${refund}ポイントが戻ります。強化に使ったポイントは戻りません。`))return;pearls+=refund;towers=towers.filter(t=>t!==activeTower);activeTower=null;$('#towerDialog').close();updateHUD();toast(`${d.name}をはずしました。✦${refund}ポイント返却`)}});
   $('#nextStageBtn').addEventListener('click',()=>{if(stageIndex<totalStages-1)enterStage(stageIndex+1)});
   $('#stageSelectResultBtn').addEventListener('click',openStageDialog);
   $('#homeBtn').addEventListener('click',returnToTitle);$('#retryBtn').addEventListener('click',retryStage);
