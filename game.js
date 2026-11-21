@@ -138,7 +138,7 @@
     $('#teamCount').textContent=`なかま ${towers.length}ひき`;
     const auraHasFish=auraActive&&towers.some(t=>Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius);
     $('#teamHint').textContent=auraHasFish?'応援エリア内の魚を強化中！':auraActive?'イワシんを魚の近くへ！':towers.length?`ぶき Lv.${weaponLevel+1}　あみ Lv.${netLevel+1}`:'魚カードをえらんでね';
-    $('#netUpgradeText').textContent=`耐久 +2　✦ ${45+netLevel*35}`;
+    $('#netUpgradeText').textContent=`最大耐久 +2・耐久回復　✦ ${45+netLevel*35}`;
     $('#weaponUpgradeText').textContent=`こうげき +20%　✦ ${60+weaponLevel*45}`;
     $('#fishCards').querySelectorAll('.fish-card').forEach(c=>{const d=kindData[c.dataset.kind];c.classList.toggle('selected',c.dataset.kind===selectedKind);c.setAttribute('aria-pressed',String(c.dataset.kind===selectedKind));c.classList.toggle('unaffordable',pearls<d.cost)});
     $('#waveBtn').disabled=waveLive||wave>=5||(started&&wave>0&&!waveDone);
