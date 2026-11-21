@@ -136,7 +136,8 @@
     $('#netHp').textContent=hp;$('#healthFill').style.width=`${Math.max(0,hp/(5+netLevel*2)*100)}%`;$('#netHp').nextElementSibling.textContent=` / ${5+netLevel*2}`;$('#pearls').textContent=pearls;$('#waveNum').textContent=wave;
     $('#wavePips').innerHTML=Array.from({length:5},(_,i)=>`<i class="${i<wave?'done':''}"></i>`).join('');
     $('#teamCount').textContent=`なかま ${towers.length}ひき`;
-    $('#teamHint').textContent=auraActive?'応援エリア内の魚を強化中！':towers.length?`ぶき Lv.${weaponLevel+1}　あみ Lv.${netLevel+1}`:'魚カードをえらんでね';
+    const auraHasFish=auraActive&&towers.some(t=>Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius);
+    $('#teamHint').textContent=auraHasFish?'応援エリア内の魚を強化中！':auraActive?'イワシんを魚の近くへ！':towers.length?`ぶき Lv.${weaponLevel+1}　あみ Lv.${netLevel+1}`:'魚カードをえらんでね';
     $('#netUpgradeText').textContent=`耐久 +2　✦ ${45+netLevel*35}`;
     $('#weaponUpgradeText').textContent=`こうげき +20%　✦ ${60+weaponLevel*45}`;
     $('#fishCards').querySelectorAll('.fish-card').forEach(c=>{const d=kindData[c.dataset.kind];c.classList.toggle('selected',c.dataset.kind===selectedKind);c.setAttribute('aria-pressed',String(c.dataset.kind===selectedKind));c.classList.toggle('unaffordable',pearls<d.cost)});
@@ -237,8 +238,9 @@
   function tick(dt,now){
     if(!paused){
       if(!specialReady){specialTimer=Math.max(0,specialTimer-dt);if(specialTimer===0)specialReady=true}
-      if(auraActive&&waveLive){auraEnergy=Math.max(0,auraEnergy-auraDrain*dt);if(auraEnergy===0){auraActive=false;toast('元気を使い切ったよ。休むと回復するよ！')}}
-      else if(!auraActive)auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
+      const auraWorking=auraActive&&waveLive&&towers.some(t=>Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius);
+      if(auraWorking){auraEnergy=Math.max(0,auraEnergy-auraDrain*dt);if(auraEnergy===0){auraActive=false;toast('元気を使い切ったよ。休むと回復するよ！')}}
+      else if(!auraActive||!waveLive||!towers.some(t=>Math.hypot(t.x-player.x,t.y-player.y)<=auraRadius))auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
       if(waveLive){spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
         for(const e of [...enemies]){e.wobble+=dt*4;e.p+=e.speed*dt/1030;const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
         for(const t of towers){t.cooldown-=dt;const d=kindData[t.kind],range=d.range*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
