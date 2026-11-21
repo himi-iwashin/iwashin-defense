@@ -36,8 +36,10 @@
   const totalStages = stageMaps.length;
   let stageIndex = 0, stage = stageMaps[0], pendingStage = 0;
   let unlockedStage = Math.max(2,Math.min(totalStages,Number(localStorage.getItem('iwashinDefenseUnlocked')||2)));
+  let hardUnlocked=localStorage.getItem('iwashinDefenseHardUnlocked')==='1',hardMode=false;
   let slots = stage.slots.map(([x,y])=>({x,y}));
   let route = stage.route.map(([x,y])=>({x,y}));
+  let routes=[route];
   let netShape = stage.shape.map(([x,y])=>({x,y}));
   const trashTypes = ['can','bottle','bag','net','driftwood'];
 
@@ -71,8 +73,8 @@
     for(let i=0;i<15;i++){const x=minX+15+i*((maxX-minX-30)/14);line(x,minY+5,x+16,maxY-5,'rgba(180,224,194,.17)',1)}
     ctx.restore();
     for(const {x,y} of netShape){ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fillStyle='#ffcb76';ctx.fill();ctx.strokeStyle='#fff4d9';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.arc(x-2.5,y-2.5,2.5,0,Math.PI*2);ctx.fillStyle='#fff9db';ctx.fill()}
-    ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(route[0].x,route[0].y);for(let i=1;i<route.length;i++){let p=route[i];ctx.lineTo(p.x,p.y)}
-    ctx.strokeStyle='rgba(255,205,116,.22)';ctx.lineWidth=42;ctx.stroke();ctx.strokeStyle='rgba(255,222,151,.54)';ctx.lineWidth=3;ctx.setLineDash([7,12]);ctx.stroke();ctx.setLineDash([]);
+    ctx.lineCap='round';ctx.lineJoin='round';
+    routes.forEach((path,index)=>{ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.strokeStyle=index===0?'rgba(255,205,116,.22)':'rgba(111,226,224,.18)';ctx.lineWidth=42;ctx.stroke();ctx.strokeStyle=index===0?'rgba(255,222,151,.58)':'rgba(125,234,224,.7)';ctx.lineWidth=index===0?3:2.5;ctx.setLineDash(index===0?[7,12]:[3,9]);ctx.stroke();ctx.setLineDash([])});
     const entry={x:Math.max(7,route[0].x+22),y:route[0].y},exit=route[route.length-1];
     const ey=Math.max(24,Math.min(H-24,entry.y)),xy=Math.max(24,Math.min(H-24,exit.y));
     rounded(entry.x,ey-17,72,34,17,'#11617a','#9ee1d7');ctx.fillStyle='#efffdf';ctx.font='800 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ごみ！',entry.x+36,ey);
@@ -127,7 +129,7 @@
     const now=performance.now();drawBg(now);drawTerrain();drawNet();
     for(let i=0;i<slots.length;i++)drawSlot(slots[i],i);
     for(const s of shots){ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.tx,s.ty);ctx.strokeStyle=s.color;ctx.lineWidth=(s.kind==='tuna'?9:s.kind==='yellowtail'?6:s.kind==='mackerel'?4:2)+(s.boosted?2:0);ctx.lineCap=s.kind==='tuna'?'round':'butt';ctx.shadowColor=s.color;ctx.shadowBlur=s.kind==='tuna'?20:s.boosted?19:9;ctx.stroke();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(s.tx,s.ty,s.kind==='tuna'?10:s.kind==='yellowtail'?7:s.boosted?6:4,0,Math.PI*2);ctx.fillStyle=s.boosted?'#fff5a6':s.color;ctx.fill();if(s.kind==='tuna'){ctx.beginPath();ctx.arc(s.tx,s.ty,15+Math.sin(now/35)*2,0,Math.PI*2);ctx.strokeStyle='#ffbfd0';ctx.lineWidth=2;ctx.stroke()}}
-    for(const e of enemies)drawTrash(e);for(const c of bonusCoins){const p=routePoint(c.p);ctx.save();ctx.translate(p.x,p.y+Math.sin(performance.now()/120+c.phase)*5);ctx.shadowColor='#ffe866';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fillStyle='#ffe866';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#8d5b13';ctx.font='900 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✦',0,1);ctx.restore()}
+    for(const e of enemies)drawTrash(e);for(const c of bonusCoins){const p=routePoint(c.p,routes[c.routeIndex]||route);ctx.save();ctx.translate(p.x,p.y+Math.sin(performance.now()/120+c.phase)*5);ctx.shadowColor='#ffe866';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fillStyle='#ffe866';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#8d5b13';ctx.font='900 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✦',0,1);ctx.restore()}
     for(const p of particles){ctx.globalAlpha=Math.max(0,p.life);ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();ctx.globalAlpha=1}
     drawPlayer();
     if(!started){ctx.fillStyle='rgba(255,255,255,.1)';ctx.font='800 14px sans-serif';ctx.textAlign='center';ctx.fillText('魚のなかまを配置して ぼうえい開始！',480,486)}
@@ -144,7 +146,7 @@
     $('#fishCards').querySelectorAll('.fish-card').forEach(c=>{const d=kindData[c.dataset.kind];c.classList.toggle('selected',c.dataset.kind===selectedKind);c.setAttribute('aria-pressed',String(c.dataset.kind===selectedKind));c.classList.toggle('unaffordable',pearls<d.cost)});
     $('#waveBtn').disabled=waveLive||wave>=5;
     $('#waveBtn').innerHTML=!started?'じゅんび開始 <span>▶</span>':waveLive?'ぼうえい中 <span>●</span>':`つぎの波まで ${Math.max(0,Math.ceil(waveStartTimer))}秒 <span>▶</span>`;
-    $('#stageLabel').innerHTML=`STAGE ${String(stageIndex+1).padStart(2,'0')} <b>${stage.name}</b>`;
+    $('#stageLabel').innerHTML=`STAGE ${String(stageIndex+1).padStart(2,'0')} ${hardMode?'<em>HARD</em>':''} <b>${stage.name}</b>`;
     const phase=$('#phaseText'),pill=phase.parentElement;
     pill.classList.toggle('live',waveLive);pill.classList.toggle('alert',hp<=2);
     phase.textContent=waveLive?'ぼうえい中':waveDone?(wave>=5?'クリア！':'じゅんびOK'):started?'じゅんび中':'たいき中';
@@ -161,38 +163,49 @@
   function drawTerrain(){const g=stage.gimmick;if(!g)return;ctx.save();ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,Math.PI*2);ctx.fillStyle=g.type==='current'?'#63dfff20':'#59e3a520';ctx.fill();ctx.setLineDash([8,7]);ctx.lineWidth=3;ctx.strokeStyle=g.type==='current'?'#71e7ff99':'#7bf0b899';ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#effff2';ctx.font='900 11px sans-serif';ctx.textAlign='center';ctx.fillText(g.type==='current'?'潮流：ごみが速くなる':'海藻：ごみが遅くなる',g.x,g.y-g.r-8);ctx.restore()}
   function chooseEvolution(path){if(!activeTower||activeTower.evolution)return;activeTower.evolution=path;toast(path==='power'?'パワー型！攻撃力アップ・攻撃間隔長め':'連射型！攻撃間隔短縮・攻撃力ひかえめ');$('#towerDialog').close();activeTower=null}
   $('#evolutionPathA')?.addEventListener('click',()=>chooseEvolution('power'));$('#evolutionPathB')?.addEventListener('click',()=>chooseEvolution('swift'));
+  function makeHardRoute(base,index){
+    const side=index%2===0?1:-1,last=base.length-1;
+    return base.map((p,i)=>{const a=base[Math.max(0,i-1)],b=base[Math.min(last,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,offset=i===0||i===last?70:54;
+      const x=p[0]+(-dy/len)*offset*side,y=p[1]+(dx/len)*offset*side;
+      return {x:Math.max(8,Math.min(W-8,x)),y:Math.max(45,Math.min(H-38,y))};
+    });
+  }
   function setStage(index){
     stageIndex=Math.max(0,Math.min(totalStages-1,index));stage=stageMaps[stageIndex];setupTerrain(stageIndex);
-    slots=stage.slots.map(([x,y])=>({x,y}));route=stage.route.map(([x,y])=>({x,y}));netShape=stage.shape.map(([x,y])=>({x,y}));
+    slots=stage.slots.map(([x,y])=>({x,y}));route=stage.route.map(([x,y])=>({x,y}));routes=hardMode?[route,makeHardRoute(stage.route,stageIndex)]:[route];netShape=stage.shape.map(([x,y])=>({x,y}));
   }
   function renderStageGrid(){
+    const note=$('#stageDialogNote');let modeBar=$('#modeBar');
+    if(!modeBar){modeBar=document.createElement('div');modeBar.id='modeBar';modeBar.style.cssText='display:flex;gap:10px;margin:14px 0 18px;';note.after(modeBar)}
+    modeBar.innerHTML='';
+    [['ノーマル',false],['ハード'+(hardUnlocked?'':' 🔒'),true]].forEach(([label,isHard])=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=isHard&&!hardUnlocked;b.setAttribute('aria-pressed',String(hardMode===isHard));b.style.cssText=`flex:1;min-height:48px;border-radius:14px;border:1px solid ${hardMode===isHard?'#7de6d6':'#31536a'};background:${hardMode===isHard?'linear-gradient(120deg,#75dfd0,#53c5d5)':'#0b2e40'};color:${hardMode===isHard?'#073446':'#d7edf0'};font-weight:900;opacity:${b.disabled?.62:1};`;b.addEventListener('click',()=>{if(isHard&&!hardUnlocked)return;hardMode=isHard;renderStageGrid()});modeBar.append(b)});
     const grid=$('#stageGrid');grid.innerHTML='';
     stageMaps.forEach((item,i)=>{
       const unlocked=i<unlockedStage,button=document.createElement('button');button.type='button';button.className='stage-option';button.disabled=!unlocked;button.classList.toggle('selected',i===pendingStage);
-      button.innerHTML=`<b>STAGE ${String(i+1).padStart(2,'0')}</b><span>${unlocked?item.name:'🔒 クリアで解放'}</span><small>${unlocked?`むずかしさ ${'★'.repeat(Math.min(5,1+Math.floor(i/2)))}`:'未解放'}</small>`;
+      button.innerHTML=`<b>STAGE ${String(i+1).padStart(2,'0')}</b><span>${unlocked?item.name:'🔒 クリアで解放'}</span><small>${unlocked?`むずかしさ ${'★'.repeat(Math.min(5,1+Math.floor(i/2)))}${hardMode?' ＋＋':''}`:'未解放'}</small>`;
       button.addEventListener('click',()=>{if(!unlocked)return;pendingStage=i;renderStageGrid()});grid.append(button);
     });
-    $('#stagePlayBtn').disabled=pendingStage>=unlockedStage;
-    $('#stageDialogNote').textContent=`${unlockedStage}ステージまで解放中。クリアすると次の海が開くよ。`;
+    $('#stagePlayBtn').disabled=pendingStage>=unlockedStage;$('#stagePlayBtn').textContent=hardMode?'ハードでこのステージへ':'このステージへ';
+    note.textContent=hardUnlocked?'全10ステージクリア！ハードは敵が強く、別ルートからも攻めてくるよ。':`${unlockedStage}ステージまで解放中。全10ステージをクリアするとハードが開くよ。`;
   }
   function openStageDialog(){pendingStage=stageIndex;renderStageGrid();$('#stageDialog').showModal()}
   function enterStage(index){
     setStage(index);started=true;paused=false;wave=0;hp=5+netLevel*2;score=0;enemies=[];towers=[];shots=[];particles=[];bonusCoins=[];spawnLeft=0;spawnTimer=0;waveLive=false;waveDone=false;waveStartTimer=8;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;selectedKind='sardine';player.x=88;player.y=345;
-    $('#startScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#missionText').textContent=`STAGE ${stageIndex+1}：${stage.name}を5回のごみの波から守ろう`;
+    $('#startScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#missionText').textContent=`STAGE ${stageIndex+1}${hardMode?' HARD':''}：${stage.name}を5回のごみの波から守ろう`;
     updateHUD();draw();toast(`STAGE ${stageIndex+1}「${stage.name}」へ！`)
   }
   function returnToTitle(){
     setStage(0);started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];bonusCoins=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;player.x=88;player.y=345;
-    $('#resultScreen').classList.add('hidden');$('#startScreen').classList.remove('hidden');$('#missionText').textContent='5回のごみの波から あみをまもろう';updateHUD();draw()
+    $('#resultScreen').classList.add('hidden');$('#startScreen').classList.remove('hidden');hardMode=false;$('#missionText').textContent='5回のごみの波から あみをまもろう';updateHUD();draw()
   }
-  function routePoint(progress){
-    const segments=[];let total=0;for(let i=0;i<route.length-1;i++){const a=route[i],b=route[i+1],len=Math.hypot(b.x-a.x,b.y-a.y);segments.push({a,b,len,start:total});total+=len}
-    let d=Math.max(0,Math.min(1,progress))*total;for(const s of segments){if(d<=s.start+s.len){const u=(d-s.start)/s.len;return{x:s.a.x+(s.b.x-s.a.x)*u,y:s.a.y+(s.b.y-s.a.y)*u}}}return route.at(-1)
+  function routePoint(progress,path=route){
+    const segments=[];let total=0;for(let i=0;i<path.length-1;i++){const a=path[i],b=path[i+1],len=Math.hypot(b.x-a.x,b.y-a.y);segments.push({a,b,len,start:total});total+=len}
+    let d=Math.max(0,Math.min(1,progress))*total;for(const s of segments){if(d<=s.start+s.len){const u=(d-s.start)/s.len;return{x:s.a.x+(s.b.x-s.a.x)*u,y:s.a.y+(s.b.y-s.a.y)*u}}}return path.at(-1)
   }
   function beginWave(){
     if(!started){openStageDialog();return}
     if(waveLive||wave>=5)return;
-    waveStartTimer=0;wave++;waveLive=true;waveDone=false;spawnLeft=6+wave*2+stageIndex;spawnTimer=.15;if(wave===5)newEnemy(true);$('#missionText').textContent=`STAGE ${stageIndex+1}・ウェーブ ${wave}：あと ${spawnLeft}このごみに注意！`;updateHUD();toast(`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
+    waveStartTimer=0;wave++;waveLive=true;waveDone=false;spawnLeft=Math.ceil((6+wave*2+stageIndex)*(hardMode?1.38:1));spawnTimer=.15;if(wave===5){newEnemy(true);if(hardMode)newEnemy(true)}$('#missionText').textContent=`STAGE ${stageIndex+1}${hardMode?' HARD':''}・ウェーブ ${wave}：${hardMode?'二つのルートから':'あと'} ${hardMode?'ごみがせまる！':`あと ${spawnLeft}このごみに注意！`}`;updateHUD();toast(hardMode?`ハード波 ${wave}！複数ルートを警戒！`:`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
   }
   function enterPreparation(){
     if(started)return;
@@ -205,9 +218,10 @@
     updateHUD();draw()
   }
   function newEnemy(isBoss=false){
-    const types=['can','bottle','bag'];if(stageIndex>=1)types.push('net');if(stageIndex>=2)types.push('driftwood');if(stageIndex>=4)types.push('glass');if(stageIndex>=6)types.push('tire');if(stageIndex>=8)types.push('oil');const kind=isBoss?'boss':types[Math.floor(Math.random()*types.length)];
-    const baseHp=kind==='boss'?46+stageIndex*13:kind==='oil'?7+wave*1.1:kind==='tire'?6+wave*.8:kind==='glass'?4+wave*.65:kind==='driftwood'?4+wave:kind==='net'?3+wave*.5:kind==='bottle'?2+wave*.4:1.5+wave*.3;const hpv=baseHp*(1+stageIndex*.105);
-    enemies.push({kind,x:route[0].x,y:route[0].y,p:0,hp:hpv,maxHp:hpv,speed:isBoss?22+stageIndex*1.3:((kind==='bag'?45:kind==='net'?35:kind==='driftwood'?29:kind==='tire'?27:kind==='oil'?24:kind==='glass'?37:38)+wave*2)*(1+stageIndex*.025),wobble:Math.random()*6,hit:0,slowTimer:0,slowFactor:1,freezeTimer:0});if(!isBoss&&bonusCoins.length<2&&Math.random()<.14)bonusCoins.push({p:0,life:25,value:20+Math.floor(Math.random()*21),phase:Math.random()*6})
+    const types=['can','bottle','bag'];if(hardMode||stageIndex>=1)types.push('net');if(hardMode||stageIndex>=2)types.push('driftwood');if(hardMode||stageIndex>=4)types.push('glass');if(hardMode||stageIndex>=6)types.push('tire');if(hardMode||stageIndex>=8)types.push('oil');const kind=isBoss?'boss':types[Math.floor(Math.random()*types.length)];
+    const baseHp=kind==='boss'?46+stageIndex*13:kind==='oil'?7+wave*1.1:kind==='tire'?6+wave*.8:kind==='glass'?4+wave*.65:kind==='driftwood'?4+wave:kind==='net'?3+wave*.5:kind==='bottle'?2+wave*.4:1.5+wave*.3;const hpv=baseHp*(1+stageIndex*.105)*(hardMode?1.85:1);
+    const routeIndex=hardMode?Math.floor(Math.random()*routes.length):0,path=routes[routeIndex]||route;
+    enemies.push({kind,x:path[0].x,y:path[0].y,p:0,routeIndex,hp:hpv,maxHp:hpv,speed:(isBoss?22+stageIndex*1.3:((kind==='bag'?45:kind==='net'?35:kind==='driftwood'?29:kind==='tire'?27:kind==='oil'?24:kind==='glass'?37:38)+wave*2)*(1+stageIndex*.025))*(hardMode?1.16:1),wobble:Math.random()*6,hit:0,slowTimer:0,slowFactor:1,freezeTimer:0});if(!isBoss&&bonusCoins.length<2&&Math.random()<.14)bonusCoins.push({p:0,routeIndex,life:25,value:20+Math.floor(Math.random()*21),phase:Math.random()*6})
   }
   function addPop(x,y,color,n=7){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*140,vy:(Math.random()-.7)*110,r:2+Math.random()*4,life:.5+Math.random()*.35,color})}
   function attackSpecial(){
@@ -226,15 +240,15 @@
   function endGame(win){
     waveLive=false;waveDone=false;paused=true;auraActive=false;
     $('#resultFish').src=win?fishImage.src:(sadImage.complete&&sadImage.naturalWidth?sadImage.src:fishImage.src);
-    if(win){unlockedStage=Math.max(unlockedStage,Math.min(totalStages,stageIndex+2));localStorage.setItem('iwashinDefenseUnlocked',String(unlockedStage));pearls+=40+stageIndex*10}
-    $('#resultEyebrow').textContent=win?`STAGE ${stageIndex+1} CLEAR!`:'TRY AGAIN';$('#resultTitle').textContent=win?(stageIndex===totalStages-1?'全10ステージ制覇！':'あみをまもった！'):'あみがやぶれちゃった…';$('#resultText').textContent=win?`「${stage.name}」クリア！ ごみ ${score/10}こをかたづけたよ。ボーナス ✦ ${40+stageIndex*10}`:'魚のなかまたちと もう一度チャレンジしよう。';
+    if(win){unlockedStage=Math.max(unlockedStage,Math.min(totalStages,stageIndex+2));localStorage.setItem('iwashinDefenseUnlocked',String(unlockedStage));if(!hardMode&&stageIndex===totalStages-1){hardUnlocked=true;localStorage.setItem('iwashinDefenseHardUnlocked','1')}pearls+=40+stageIndex*10}
+    $('#resultEyebrow').textContent=win?`STAGE ${stageIndex+1} ${hardMode?'HARD ':''}CLEAR!`:'TRY AGAIN';$('#resultTitle').textContent=win?(stageIndex===totalStages-1?(hardMode?'ハード全10ステージ制覇！':hardUnlocked?'ハードモード解放！':'全10ステージ制覇！'):'あみをまもった！'):'あみがやぶれちゃった…';$('#resultText').textContent=win?`「${stage.name}」${hardMode?'ハードで':''}クリア！ ごみ ${score/10}こをかたづけたよ。${!hardMode&&stageIndex===totalStages-1?'ハードモードが解放されたよ！':'ボーナス ✦ '+(40+stageIndex*10)}`:'魚のなかまたちと もう一度チャレンジしよう。';
     $('#nextStageBtn').hidden=!win||stageIndex>=totalStages-1;$('#retryBtn').hidden=false;$('#stageSelectResultBtn').hidden=false;$('#homeBtn').hidden=false;
     const result=$('#resultScreen');result.classList.remove('win','fail');result.classList.add(win?'win':'fail');result.classList.remove('hidden');
   }
   function retryStage(){enterStage(stageIndex)}
   function placeOrSelect(x,y){
     if(!started){return}
-    const coinIndex=bonusCoins.findIndex(c=>{const p=routePoint(c.p);return Math.hypot(p.x-x,p.y-y)<25});if(coinIndex>=0){const coin=bonusCoins.splice(coinIndex,1)[0];pearls+=coin.value;addPop(x,y,'#ffe866',12);toast(`ボーナスコイン！ ✦ ${coin.value}ポイント！`);updateHUD();sfx(880,.13);return}const hitSlot=slots.findIndex(s=>Math.hypot(s.x-x,s.y-y)<32);
+    const coinIndex=bonusCoins.findIndex(c=>{const p=routePoint(c.p,routes[c.routeIndex]||route);return Math.hypot(p.x-x,p.y-y)<25});if(coinIndex>=0){const coin=bonusCoins.splice(coinIndex,1)[0];pearls+=coin.value;addPop(x,y,'#ffe866',12);toast(`ボーナスコイン！ ✦ ${coin.value}ポイント！`);updateHUD();sfx(880,.13);return}const hitSlot=slots.findIndex(s=>Math.hypot(s.x-x,s.y-y)<32);
     if(hitSlot>=0){const existing=towers.find(t=>t.slot===hitSlot);if(existing){openTower(existing);return}const d=kindData[selectedKind];if(pearls<d.cost){toast('ポイントがたりないよ');return}pearls-=d.cost;towers.push({kind:selectedKind,slot:hitSlot,x:slots[hitSlot].x,y:slots[hitSlot].y,level:1,cooldown:.2});addPop(slots[hitSlot].x,slots[hitSlot].y,d.color,6);toast(`${d.name} が なかまになった！`);updateHUD();sfx(660,.12);return}
     player.x=Math.max(38,Math.min(W-38,x));player.y=Math.max(65,Math.min(H-55,y));player.blink=.18;return
   }
@@ -249,8 +263,8 @@
       const auraWorking=auraActive&&waveLive;
       if(auraWorking){auraEnergy=Math.max(0,auraEnergy-auraDrain*dt);if(auraEnergy===0){auraActive=false;toast('元気を使い切ったよ。休むと回復するよ！')}}
       else if(!auraActive||!waveLive)auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
-      if(waveLive){for(const coin of bonusCoins){coin.p+=dt*.045;coin.life-=dt}bonusCoins=bonusCoins.filter(c=>c.life>0&&c.p<1);spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
-        for(const e of [...enemies]){e.wobble+=dt*4;e.slowTimer=Math.max(0,(e.slowTimer||0)-dt);e.freezeTimer=Math.max(0,(e.freezeTimer||0)-dt);e.p+=e.speed*dt/1030*(e.freezeTimer>0?0:e.slowTimer>0?e.slowFactor:1)*(stage.gimmick&&Math.hypot(e.x-stage.gimmick.x,e.y-stage.gimmick.y)<stage.gimmick.r?(stage.gimmick.type==='kelp'?.62:1.42):1);const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
+      if(waveLive){for(const coin of bonusCoins){coin.p+=dt*.045;coin.life-=dt}bonusCoins=bonusCoins.filter(c=>c.life>0&&c.p<1);spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.32,(1.15-wave*.08)*(hardMode?.72:1))}
+        for(const e of [...enemies]){e.wobble+=dt*4;e.slowTimer=Math.max(0,(e.slowTimer||0)-dt);e.freezeTimer=Math.max(0,(e.freezeTimer||0)-dt);e.p+=e.speed*dt/1030*(e.freezeTimer>0?0:e.slowTimer>0?e.slowFactor:1)*(stage.gimmick&&Math.hypot(e.x-stage.gimmick.x,e.y-stage.gimmick.y)<stage.gimmick.r?(stage.gimmick.type==='kelp'?.62:1.42):1);const p=routePoint(e.p,routes[e.routeIndex]||route);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
         for(const t of towers){if(t.kind==='jelly'){const range=kindData.jelly.range+(t.level-1)*12;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<range){e.slowTimer=.16;e.slowFactor=.65}}}else if(t.kind==='squid'){t.cooldown-=dt;if(t.cooldown<=0){let hit=0;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<kindData.squid.range+(t.level-1)*12){e.slowTimer=1.6+(t.level-1)*.2;e.slowFactor=.45;hit++;addPop(e.x,e.y,'#b9f7ff',3)}}t.cooldown=kindData.squid.rate;if(hit)toast('イカの墨！敵の群れがスローダウン！')}}else if(t.kind==='octopus'){t.cooldown-=dt;if(t.cooldown<=0){const target=enemies.filter(e=>Math.hypot(e.x-t.x,e.y-t.y)<kindData.octopus.range+(t.level-1)*12).sort((a,b)=>b.p-a.p)[0];t.cooldown=kindData.octopus.rate;if(target){target.freezeTimer=1.1+(t.level-1)*.15;addPop(target.x,target.y,'#ff9eaf',12);toast('タコの足！敵を足止め！')}}}}for(const t of towers){const d=kindData[t.kind];if(d.support)continue;t.cooldown-=dt;const range=d.range*(t.evolution==='power'?.94:t.evolution==='swift'?1.08:1)*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
         for(const s of [...shots]){s.life-=dt;if(s.life<=0){if(s.enemy&&enemies.includes(s.enemy)){s.enemy.hp-=s.damage;s.enemy.hit=.12;if(s.enemy.hp<=0)defeat(s.enemy);if(s.kind==='mackerel'){addPop(s.tx,s.ty,'#71f1cd',8);for(const e of [...enemies])if(e!==s.enemy&&Math.hypot(e.x-s.tx,e.y-s.ty)<48){e.hp-=1.2;if(e.hp<=0)defeat(e)}}else if(s.kind==='tuna')addPop(s.tx,s.ty,'#fb6c9a',16);else if(s.kind==='yellowtail')addPop(s.tx,s.ty,'#ffad69',11)}shots.splice(shots.indexOf(s),1)}}
         if(spawnLeft===0&&enemies.length===0)finishWave();
