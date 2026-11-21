@@ -170,12 +170,12 @@
   }
   function openStageDialog(){pendingStage=stageIndex;renderStageGrid();$('#stageDialog').showModal()}
   function enterStage(index){
-    setStage(index);started=true;paused=false;wave=0;hp=5+netLevel*2;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;spawnTimer=0;waveLive=false;waveDone=false;waveStartTimer=8;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;selectedKind='sardine';player.x=88;player.y=345;
+    setStage(index);started=true;paused=false;wave=0;hp=5+netLevel*2;score=0;enemies=[];towers=[];shots=[];particles=[];bonusCoins=[];spawnLeft=0;spawnTimer=0;waveLive=false;waveDone=false;waveStartTimer=8;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;selectedKind='sardine';player.x=88;player.y=345;
     $('#startScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#missionText').textContent=`STAGE ${stageIndex+1}：${stage.name}を5回のごみの波から守ろう`;
     updateHUD();draw();toast(`STAGE ${stageIndex+1}「${stage.name}」へ！`)
   }
   function returnToTitle(){
-    setStage(0);started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;player.x=88;player.y=345;
+    setStage(0);started=false;paused=false;wave=0;hp=5;pearls=120;weaponLevel=0;netLevel=0;score=0;enemies=[];towers=[];shots=[];particles=[];bonusCoins=[];spawnLeft=0;waveLive=false;waveDone=false;specialReady=true;specialTimer=0;auraEnergy=100;auraActive=false;player.x=88;player.y=345;
     $('#resultScreen').classList.add('hidden');$('#startScreen').classList.remove('hidden');$('#missionText').textContent='5回のごみの波から あみをまもろう';updateHUD();draw()
   }
   function routePoint(progress){
@@ -244,7 +244,7 @@
       else if(!auraActive||!waveLive)auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
       if(waveLive){for(const coin of bonusCoins){coin.p+=dt*.045;coin.life-=dt}bonusCoins=bonusCoins.filter(c=>c.life>0&&c.p<1);spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
         for(const e of [...enemies]){e.wobble+=dt*4;e.slowTimer=Math.max(0,(e.slowTimer||0)-dt);e.freezeTimer=Math.max(0,(e.freezeTimer||0)-dt);e.p+=e.speed*dt/1030*(e.freezeTimer>0?0:e.slowTimer>0?e.slowFactor:1);const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
-        for(const t of towers){t.cooldown-=dt;const d=kindData[t.kind],range=d.range*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
+        for(const t of towers){if(t.kind==='jelly'){const range=kindData.jelly.range+(t.level-1)*12;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<range){e.slowTimer=.16;e.slowFactor=.65}}}else if(t.kind==='squid'){t.cooldown-=dt;if(t.cooldown<=0){let hit=0;for(const e of enemies){if(Math.hypot(e.x-t.x,e.y-t.y)<kindData.squid.range+(t.level-1)*12){e.slowTimer=1.6+(t.level-1)*.2;e.slowFactor=.45;hit++;addPop(e.x,e.y,'#b9f7ff',3)}}t.cooldown=kindData.squid.rate;if(hit)toast('イカの墨！敵の群れがスローダウン！')}}else if(t.kind==='octopus'){t.cooldown-=dt;if(t.cooldown<=0){const target=enemies.filter(e=>Math.hypot(e.x-t.x,e.y-t.y)<kindData.octopus.range+(t.level-1)*12).sort((a,b)=>b.p-a.p)[0];t.cooldown=kindData.octopus.rate;if(target){target.freezeTimer=1.1+(t.level-1)*.15;addPop(target.x,target.y,'#ff9eaf',12);toast('タコの足！敵を足止め！')}}}}for(const t of towers){const d=kindData[t.kind];if(d.support)continue;t.cooldown-=dt;const range=d.range*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
         for(const s of [...shots]){s.life-=dt;if(s.life<=0){if(s.enemy&&enemies.includes(s.enemy)){s.enemy.hp-=s.damage;s.enemy.hit=.12;if(s.enemy.hp<=0)defeat(s.enemy);if(s.kind==='mackerel'){addPop(s.tx,s.ty,'#71f1cd',8);for(const e of [...enemies])if(e!==s.enemy&&Math.hypot(e.x-s.tx,e.y-s.ty)<48){e.hp-=1.2;if(e.hp<=0)defeat(e)}}else if(s.kind==='tuna')addPop(s.tx,s.ty,'#fb6c9a',16);else if(s.kind==='yellowtail')addPop(s.tx,s.ty,'#ffad69',11)}shots.splice(shots.indexOf(s),1)}}
         if(spawnLeft===0&&enemies.length===0)finishWave();
       }
