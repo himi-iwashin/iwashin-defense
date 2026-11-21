@@ -8,7 +8,7 @@
   const sadImage = new Image(); sadImage.src = '/puzzle-iwashin/iwashin-cry.png';
   let started = false, paused = false, selectedKind = 'sardine', wave = 0;
   let hp = 5, pearls = 120, weaponLevel = 0, netLevel = 0, score = 0;
-  let enemies = [], towers = [], shots = [], particles = [], spawnLeft = 0, spawnTimer = 0;
+  let enemies = [], towers = [], shots = [], particles = [], bonusCoins = [], spawnLeft = 0, spawnTimer = 0;
   let waveLive = false, waveDone = false, waveStartTimer = 0, specialReady = true, specialTimer = 0;
   let auraEnergy = 100, auraActive = false;
   const auraRadius = 158, auraDrain = 12, auraRecover = 8;
@@ -19,7 +19,7 @@
     sardine: {name:'イワシ隊',cost:35,range:144,damage:1,rate:.48,color:'#58cedd',speed:'高速連射',upgrade:40},
     mackerel:{name:'アジ支援隊',cost:55,range:192,damage:2,rate:1.0,color:'#64e3bd',speed:'広範囲',upgrade:55},
     tuna:{name:'マグロ隊長',cost:100,range:190,damage:8,rate:2.35,color:'#fb6c9a',speed:'重い一撃',upgrade:90},
-    yellowtail:{name:'ブリ大将',cost:85,range:172,damage:5,rate:1.7,color:'#ffad69',speed:'高火力',upgrade:75}, jelly:{name:'クラゲ先生',cost:65,range:150,damage:0,rate:.2,color:'#b89cff',speed:'近くの敵を35%遅くする',upgrade:60,support:true}, squid:{name:'イカ忍者',cost:75,range:178,damage:0,rate:4.2,color:'#74e6f1',speed:'墨で群れを55%遅くする',upgrade:70,support:true}, octopus:{name:'タコ番長',cost:90,range:164,damage:0,rate:4.8,color:'#ff8c9f',speed:'敵1体を約1秒止める',upgrade:80,support:true}, jelly:{name:'クラゲ先生',cost:65,range:150,damage:0,rate:.2,color:'#b89cff',speed:'近くの敵を35%遅くする',upgrade:60,support:true}, squid:{name:'イカ忍者',cost:75,range:178,damage:0,rate:4.2,color:'#74e6f1',speed:'墨で群れを55%遅くする',upgrade:70,support:true}, octopus:{name:'タコ番長',cost:90,range:164,damage:0,rate:4.8,color:'#ff8c9f',speed:'敵1体を約1秒止める',upgrade:80,support:true}
+    yellowtail:{name:'ブリ大将',cost:85,range:172,damage:5,rate:1.7,color:'#ffad69',speed:'高火力',upgrade:75}, jelly:{name:'クラゲ先生',cost:65,range:150,damage:0,rate:.2,color:'#b89cff',speed:'近くの敵を35%遅くする',upgrade:60,support:true}, squid:{name:'イカ忍者',cost:75,range:178,damage:0,rate:4.2,color:'#74e6f1',speed:'墨で群れを55%遅くする',upgrade:70,support:true}, octopus:{name:'タコ番長',cost:90,range:164,damage:0,rate:4.8,color:'#ff8c9f',speed:'敵1体を約1秒止める',upgrade:80,support:true}
   };
   const stageMaps = [
     {name:'定置網の海',shape:[[125,114],[795,114],[795,430],[125,430]],slots:[[240,143],[410,143],[580,143],[750,143],[240,414],[410,414],[580,414],[750,414]],route:[[-18,240],[104,240],[188,204],[291,218],[384,278],[504,302],[620,280],[716,324],[819,300],[978,250]]},
@@ -127,7 +127,7 @@
     const now=performance.now();drawBg(now);drawNet();
     for(let i=0;i<slots.length;i++)drawSlot(slots[i],i);
     for(const s of shots){ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.tx,s.ty);ctx.strokeStyle=s.color;ctx.lineWidth=(s.kind==='tuna'?9:s.kind==='yellowtail'?6:s.kind==='mackerel'?4:2)+(s.boosted?2:0);ctx.lineCap=s.kind==='tuna'?'round':'butt';ctx.shadowColor=s.color;ctx.shadowBlur=s.kind==='tuna'?20:s.boosted?19:9;ctx.stroke();ctx.shadowBlur=0;ctx.beginPath();ctx.arc(s.tx,s.ty,s.kind==='tuna'?10:s.kind==='yellowtail'?7:s.boosted?6:4,0,Math.PI*2);ctx.fillStyle=s.boosted?'#fff5a6':s.color;ctx.fill();if(s.kind==='tuna'){ctx.beginPath();ctx.arc(s.tx,s.ty,15+Math.sin(now/35)*2,0,Math.PI*2);ctx.strokeStyle='#ffbfd0';ctx.lineWidth=2;ctx.stroke()}}
-    for(const e of enemies)drawTrash(e);
+    for(const e of enemies)drawTrash(e);for(const c of bonusCoins){const p=routePoint(c.p);ctx.save();ctx.translate(p.x,p.y+Math.sin(performance.now()/120+c.phase)*5);ctx.shadowColor='#ffe866';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fillStyle='#ffe866';ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#8d5b13';ctx.font='900 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✦',0,1);ctx.restore()}
     for(const p of particles){ctx.globalAlpha=Math.max(0,p.life);ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();ctx.globalAlpha=1}
     drawPlayer();
     if(!started){ctx.fillStyle='rgba(255,255,255,.1)';ctx.font='800 14px sans-serif';ctx.textAlign='center';ctx.fillText('魚のなかまを配置して ぼうえい開始！',480,486)}
@@ -183,9 +183,9 @@
     let d=Math.max(0,Math.min(1,progress))*total;for(const s of segments){if(d<=s.start+s.len){const u=(d-s.start)/s.len;return{x:s.a.x+(s.b.x-s.a.x)*u,y:s.a.y+(s.b.y-s.a.y)*u}}}return route.at(-1)
   }
   function beginWave(){
-    if(!started){enterPreparation();return}
+    if(!started){openStageDialog();return}
     if(waveLive||wave>=5)return;
-    waveStartTimer=0;wave++;waveLive=true;waveDone=false;spawnLeft=6+wave*2+stageIndex;spawnTimer=.15;$('#missionText').textContent=`STAGE ${stageIndex+1}・ウェーブ ${wave}：あと ${spawnLeft}このごみに注意！`;updateHUD();toast(`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
+    waveStartTimer=0;wave++;waveLive=true;waveDone=false;spawnLeft=6+wave*2+stageIndex;spawnTimer=.15;if(wave===5)newEnemy(true);$('#missionText').textContent=`STAGE ${stageIndex+1}・ウェーブ ${wave}：あと ${spawnLeft}このごみに注意！`;updateHUD();toast(`ウェーブ ${wave} がきたよ！`);sfx(540,.16)
   }
   function enterPreparation(){
     if(started)return;
@@ -197,10 +197,10 @@
     else if(auraEnergy>0){auraActive=true;toast('イワシん応援！近くの魚がパワーアップ！')}
     updateHUD();draw()
   }
-  function newEnemy(){
-    const kind=trashTypes[Math.random()<Math.min(.25,.07+wave*.035)?Math.floor(Math.random()*trashTypes.length):Math.floor(Math.random()*3)];
-    let hpv=(kind==='driftwood'?4+wave:kind==='net'?3+wave*.5:kind==='bottle'?2+wave*.4:1.5+wave*.3)*(1+stageIndex*.105);
-    enemies.push({kind,x:route[0].x,y:route[0].y,p:0,hp:hpv,maxHp:hpv,speed:((kind==='bag'?42:kind==='net'?35:kind==='driftwood'?29:38)+wave*2)*(1+stageIndex*.025),wobble:Math.random()*6,hit:0})
+  function newEnemy(isBoss=false){
+    const types=['can','bottle','bag'];if(stageIndex>=1)types.push('net');if(stageIndex>=2)types.push('driftwood');if(stageIndex>=4)types.push('glass');if(stageIndex>=6)types.push('tire');if(stageIndex>=8)types.push('oil');const kind=isBoss?'boss':types[Math.floor(Math.random()*types.length)];
+    const baseHp=kind==='boss'?46+stageIndex*13:kind==='oil'?7+wave*1.1:kind==='tire'?6+wave*.8:kind==='glass'?4+wave*.65:kind==='driftwood'?4+wave:kind==='net'?3+wave*.5:kind==='bottle'?2+wave*.4:1.5+wave*.3;const hpv=baseHp*(1+stageIndex*.105);
+    enemies.push({kind,x:route[0].x,y:route[0].y,p:0,hp:hpv,maxHp:hpv,speed:isBoss?22+stageIndex*1.3:((kind==='bag'?45:kind==='net'?35:kind==='driftwood'?29:kind==='tire'?27:kind==='oil'?24:kind==='glass'?37:38)+wave*2)*(1+stageIndex*.025),wobble:Math.random()*6,hit:0,slowTimer:0,slowFactor:1,freezeTimer:0});if(!isBoss&&bonusCoins.length<2&&Math.random()<.14)bonusCoins.push({p:0,life:25,value:20+Math.floor(Math.random()*21),phase:Math.random()*6})
   }
   function addPop(x,y,color,n=7){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*140,vy:(Math.random()-.7)*110,r:2+Math.random()*4,life:.5+Math.random()*.35,color})}
   function attackSpecial(){
@@ -227,7 +227,7 @@
   function retryStage(){enterStage(stageIndex)}
   function placeOrSelect(x,y){
     if(!started){return}
-    const hitSlot=slots.findIndex(s=>Math.hypot(s.x-x,s.y-y)<32);
+    const coinIndex=bonusCoins.findIndex(c=>{const p=routePoint(c.p);return Math.hypot(p.x-x,p.y-y)<25});if(coinIndex>=0){const coin=bonusCoins.splice(coinIndex,1)[0];pearls+=coin.value;addPop(x,y,'#ffe866',12);toast(`ボーナスコイン！ ✦ ${coin.value}ポイント！`);updateHUD();sfx(880,.13);return}const hitSlot=slots.findIndex(s=>Math.hypot(s.x-x,s.y-y)<32);
     if(hitSlot>=0){const existing=towers.find(t=>t.slot===hitSlot);if(existing){openTower(existing);return}const d=kindData[selectedKind];if(pearls<d.cost){toast('ポイントがたりないよ');return}pearls-=d.cost;towers.push({kind:selectedKind,slot:hitSlot,x:slots[hitSlot].x,y:slots[hitSlot].y,level:1,cooldown:.2});addPop(slots[hitSlot].x,slots[hitSlot].y,d.color,6);toast(`${d.name} が なかまになった！`);updateHUD();sfx(660,.12);return}
     player.x=Math.max(38,Math.min(W-38,x));player.y=Math.max(65,Math.min(H-55,y));player.blink=.18;return
   }
@@ -242,8 +242,8 @@
       const auraWorking=auraActive&&waveLive;
       if(auraWorking){auraEnergy=Math.max(0,auraEnergy-auraDrain*dt);if(auraEnergy===0){auraActive=false;toast('元気を使い切ったよ。休むと回復するよ！')}}
       else if(!auraActive||!waveLive)auraEnergy=Math.min(100,auraEnergy+auraRecover*dt);
-      if(waveLive){spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
-        for(const e of [...enemies]){e.wobble+=dt*4;e.p+=e.speed*dt/1030;const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
+      if(waveLive){for(const coin of bonusCoins){coin.p+=dt*.045;coin.life-=dt}bonusCoins=bonusCoins.filter(c=>c.life>0&&c.p<1);spawnTimer-=dt;if(spawnLeft>0&&spawnTimer<=0){newEnemy();spawnLeft--;spawnTimer=Math.max(.45,1.15-wave*.08)}
+        for(const e of [...enemies]){e.wobble+=dt*4;e.slowTimer=Math.max(0,(e.slowTimer||0)-dt);e.freezeTimer=Math.max(0,(e.freezeTimer||0)-dt);e.p+=e.speed*dt/1030*(e.freezeTimer>0?0:e.slowTimer>0?e.slowFactor:1);const p=routePoint(e.p);e.x=p.x;e.y=p.y;if(e.p>=1)leak(e)}
         for(const t of towers){t.cooldown-=dt;const d=kindData[t.kind],range=d.range*(inIwashinAura(t)?1.12:1);if(t.cooldown<=0){let target=null,most=-1;for(const e of enemies){const dist=Math.hypot(e.x-t.x,e.y-t.y);if(dist<range&&e.p>most){most=e.p;target=e}}if(target)fireTower(t,target)}}
         for(const s of [...shots]){s.life-=dt;if(s.life<=0){if(s.enemy&&enemies.includes(s.enemy)){s.enemy.hp-=s.damage;s.enemy.hit=.12;if(s.enemy.hp<=0)defeat(s.enemy);if(s.kind==='mackerel'){addPop(s.tx,s.ty,'#71f1cd',8);for(const e of [...enemies])if(e!==s.enemy&&Math.hypot(e.x-s.tx,e.y-s.ty)<48){e.hp-=1.2;if(e.hp<=0)defeat(e)}}else if(s.kind==='tuna')addPop(s.tx,s.ty,'#fb6c9a',16);else if(s.kind==='yellowtail')addPop(s.tx,s.ty,'#ffad69',11)}shots.splice(shots.indexOf(s),1)}}
         if(spawnLeft===0&&enemies.length===0)finishWave();
@@ -256,7 +256,7 @@
 
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();const p=canvasPoint(e);placeOrSelect(p.x,p.y)});
   $('#fishCards').addEventListener('click',e=>{const card=e.target.closest('.fish-card');if(!card)return;selectedKind=card.dataset.kind;updateHUD();if(!started)toast(`${kindData[selectedKind].name} を配置できるよ`)});
-  $('#startBtn').addEventListener('click',enterPreparation);
+  $('#startBtn').addEventListener('click',openStageDialog);
   $('#waveBtn').addEventListener('click',beginWave);$('#cleanBtn').addEventListener('click',attackSpecial);
   $('#auraBtn').addEventListener('click',toggleAura);
   $('#netUpgrade').addEventListener('click',upgradeNet);$('#weaponUpgrade').addEventListener('click',upgradeWeapon);
