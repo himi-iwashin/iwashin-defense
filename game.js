@@ -19,7 +19,7 @@
     sardine: {name:'イワシ隊',cost:35,range:144,damage:1,rate:.48,color:'#58cedd',speed:'高速連射',upgrade:40},
     mackerel:{name:'アジ支援隊',cost:55,range:192,damage:2,rate:1.0,color:'#64e3bd',speed:'広範囲',upgrade:55},
     tuna:{name:'マグロ隊長',cost:100,range:190,damage:8,rate:2.35,color:'#fb6c9a',speed:'重い一撃',upgrade:90},
-    yellowtail:{name:'ブリ大将',cost:85,range:172,damage:5,rate:1.7,color:'#ffad69',speed:'高火力',upgrade:75}
+    yellowtail:{name:'ブリ大将',cost:85,range:172,damage:5,rate:1.7,color:'#ffad69',speed:'高火力',upgrade:75}, jelly:{name:'クラゲ先生',cost:65,range:150,damage:0,rate:.2,color:'#b89cff',speed:'近くの敵を35%遅くする',upgrade:60,support:true}, squid:{name:'イカ忍者',cost:75,range:178,damage:0,rate:4.2,color:'#74e6f1',speed:'墨で群れを55%遅くする',upgrade:70,support:true}, octopus:{name:'タコ番長',cost:90,range:164,damage:0,rate:4.8,color:'#ff8c9f',speed:'敵1体を約1秒止める',upgrade:80,support:true}, jelly:{name:'クラゲ先生',cost:65,range:150,damage:0,rate:.2,color:'#b89cff',speed:'近くの敵を35%遅くする',upgrade:60,support:true}, squid:{name:'イカ忍者',cost:75,range:178,damage:0,rate:4.2,color:'#74e6f1',speed:'墨で群れを55%遅くする',upgrade:70,support:true}, octopus:{name:'タコ番長',cost:90,range:164,damage:0,rate:4.8,color:'#ff8c9f',speed:'敵1体を約1秒止める',upgrade:80,support:true}
   };
   const stageMaps = [
     {name:'定置網の海',shape:[[125,114],[795,114],[795,430],[125,430]],slots:[[240,143],[410,143],[580,143],[750,143],[240,414],[410,414],[580,414],[750,414]],route:[[-18,240],[104,240],[188,204],[291,218],[384,278],[504,302],[620,280],[716,324],[819,300],[978,250]]},
